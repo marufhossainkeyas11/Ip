@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>M3U Link Replacer</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; }
+        .link-row { display: flex; gap: 10px; margin-bottom: 10px; padding: 10px; background: #f4f4f4; }
+        .link-row input { flex: 1; padding: 8px; }
+        button { padding: 10px 15px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h2>Manual M3U Link Replacer</h2>
+    <input type="file" id="fileInput" accept=".m3u" />
+    <div id="linkContainer" style="margin-top: 20px;"></div>
+    <button id="downloadBtn" style="display: none; margin-top: 20px;">Download Updated M3U</button>
+
+    <script>
+        let originalContent = "";
+        let foundLinks = [];
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                originalContent = e.target.result;
+                extractLinks(originalContent);
+            };
+            reader.readAsText(file);
+        });
+
+        function extractLinks(content) {
+            const regex = /(https?:\/\/tv\.roarzone\.info\/player\.php\?stream=[^\s]+)/g;
+            foundLinks = [...new Set(content.match(regex) || [])];
+            
+            const container = document.getElementById('linkContainer');
+            container.innerHTML = '<h3>Detected Links:</h3>';
+            
+            foundLinks.forEach((link, index) => {
+                const row = document.createElement('div');
+                row.className = 'link-row';
+                row.innerHTML = `
+                    <input type="text" value="${link}" disabled />
+                    <span>➡️</span>
+                    <input type="text" id="newLink_${index}" placeholder="Paste actual .m3u8 link here..." />
+                `;
+                container.appendChild(row);
+            });
+
+            if (foundLinks.length > 0) {
+                document.getElementById('downloadBtn').style.display = 'block';
+            } else {
+                container.innerHTML = '<p>No player links found.</p>';
+            }
+        }
+
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            let updatedContent = originalContent;
+            
+            foundLinks.forEach((oldLink, index) => {
+                const newLink = document.getElementById(`newLink_${index}`).value.trim();
+                if (newLink) {
+                    // Replace all occurrences of the old link with the new one
+                    updatedContent = updatedContent.split(oldLink).join(newLink);
+                }
+            });
+
+            const blob = new Blob([updatedContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "updated_playlist.m3u";
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>
