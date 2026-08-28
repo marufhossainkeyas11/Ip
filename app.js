@@ -12,7 +12,7 @@
   /* ---------- CONFIG ---------- */
   // TMDB v3 API key — read-only, public-safe by TMDB's own terms.
   // Replace with your own free key from https://www.themoviedb.org/settings/api
-  const TMDB_KEY = "YOUR_TMDB_API_KEY_HERE";
+  const TMDB_KEY = "773d76e9c544b33992c3eae2e5a761d6";
   const TMDB_BASE = "https://api.themoviedb.org/3";
   const IMG_BASE = "https://image.tmdb.org/t/p/";
   const POSTER_SIZE = "w342";
