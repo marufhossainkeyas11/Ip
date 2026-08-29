@@ -354,9 +354,27 @@
     return { close };
   }
 
-  async function runSearch(query, page = 1) {
+  async function runSearch(query, page = 1, opts = {}) {
+    const { keepFilters = false } = opts;
     state.query = query;
     state.page = page;
+    // A fresh search should never be silently hidden by a filter left on
+    // from a previous chip/pill tap — reset filters unless this is just
+    // paging through the same query's results, or the caller explicitly
+    // wants the current filter carried in (e.g. a chip tap).
+    if (page === 1 && !keepFilters) {
+      state.filterType = "all";
+      state.filterLang = "";
+      state.filterYear = "";
+      $$(".chip").forEach((c) => c.classList.remove("is-active"));
+      const langFilterEl = document.getElementById("langFilter");
+      if (langFilterEl) langFilterEl.value = "";
+      const yearFilterEl = document.getElementById("yearFilter");
+      if (yearFilterEl) yearFilterEl.value = "";
+      $$(".filter-pill[data-filter-type]").forEach((p) => p.classList.remove("is-active"));
+      const allPill = document.querySelector('.filter-pill[data-filter-type="all"]');
+      if (allPill) allPill.classList.add("is-active");
+    }
     navigateTo("results");
     $("#resultsSearchInput").value = query;
     $("#heroSearchInput").value = query;
@@ -427,8 +445,18 @@
     }
 
     populateLangFilterOptions();
+    syncFilterPillUI();
     $("#loadMoreBtn").hidden = state.page >= state.totalPages;
     bindPosterCardEvents(grid);
+  }
+
+  function syncFilterPillUI() {
+    $$(".filter-pill[data-filter-type]").forEach((p) => {
+      p.classList.toggle("is-active", p.dataset.filterType === state.filterType);
+    });
+    const yearFilterEl = document.getElementById("yearFilter");
+    if (yearFilterEl) yearFilterEl.value = state.filterYear || "";
+    syncClearFiltersVisibility();
   }
 
   function populateLangFilterOptions() {
@@ -469,7 +497,7 @@
               : `<div class="poster-fallback">${escapeHtml(title)}</div>`
           }
           <span class="poster-badge poster-badge--rent">${typeLabel}</span>
-          <button class="poster-quickadd ${inList ? "is-added" : ""}" data-quickadd aria-label="${inList ? "তালিকা থেকে সরান" : "তালিকায় যোগ করুন"}" title="${inList ? "তালিকা থেকে সরান" : "তালিকায় যোগ করুন"}">+</button>
+          <button class="poster-quickadd ${inList ? "is-added" : ""}" data-quickadd aria-label="${inList ? "তালিকা থেকে সরান" : "তালিকায় যোগ করুন"}" title="${inList ? "তালিকা থেকে সরান" : "তালিকায় যোগ করুন"}"><span>+</span></button>
         </div>
         <p class="poster-title">${escapeHtml(title)}</p>
         <p class="poster-year">${year || "—"}</p>
@@ -582,11 +610,11 @@
       <div class="detail-body">
         <div class="detail-actions">
           <button class="action-btn ${inList ? "is-added" : ""}" id="detailAddBtn">
-            ${inList ? "✓ তালিকায় আছে" : "+ তালিকায় যোগ করুন"}
+            ${inList ? "তালিকায় আছে" : "+ তালিকায় যোগ করুন"}
           </button>
           ${
             inList
-              ? `<button class="action-btn action-btn--outline" id="detailWatchedBtn">${watchedStatus === "watched" ? "↺ আবার 'দেখব' এ রাখুন" : "✓ দেখা হয়ে গেছে বলুন"}</button>`
+              ? `<button class="action-btn action-btn--outline" id="detailWatchedBtn">${watchedStatus === "watched" ? "↺ আবার 'দেখব' এ রাখুন" : "দেখা হয়ে গেছে বলুন"}</button>`
               : ""
           }
         </div>
@@ -644,6 +672,35 @@
   function countryFlagEmoji(code) {
     if (!code || code.length !== 2) return "🌐";
     return String.fromCodePoint(...[...code.toUpperCase()].map((c) => 127397 + c.charCodeAt(0)));
+  }
+
+  // Build a provider -> list of {code, kind} index from the per-country
+  // TMDB response, so we can flip the panel to "pick a platform, see which
+  // countries have it" instead of only "pick a country, see its platforms".
+  function buildProviderIndex(results) {
+    const index = new Map(); // provider_id -> { provider, countries: Map(code -> Set(kind)) }
+    Object.entries(results).forEach(([code, regionData]) => {
+      if (!regionData) return;
+      const kinds = [
+        ["flatrate", "স্ট্রিমিং"],
+        ["free", "স্ট্রিমিং"],
+        ["ads", "স্ট্রিমিং"],
+        ["rent", "রেন্ট"],
+        ["buy", "কেনা"],
+      ];
+      kinds.forEach(([key, kindLabel]) => {
+        (regionData[key] || []).forEach((p) => {
+          if (!index.has(p.provider_id)) {
+            index.set(p.provider_id, { provider: p, countries: new Map() });
+          }
+          const entry = index.get(p.provider_id);
+          if (!entry.countries.has(code)) entry.countries.set(code, new Set());
+          entry.countries.get(code).add(kindLabel);
+        });
+      });
+    });
+    // Sort providers by how many countries they're available in (most first)
+    return [...index.values()].sort((a, b) => b.countries.size - a.countries.size);
   }
 
   function watchGroupBodyHTML(regionData) {
@@ -717,6 +774,37 @@
       })
       .join("");
 
+    // ---- Platform-first mode: pick a provider, see which countries have it ----
+    const providerList = buildProviderIndex(results);
+    const activeProviderId = providerList[0] ? String(providerList[0].provider.provider_id) : "";
+
+    const platformTabsHTML = providerList
+      .map(({ provider }) => {
+        const logo = logoUrl(provider.logo_path);
+        return `
+        <button class="watch-tab watch-tab--platform ${String(provider.provider_id) === activeProviderId ? "is-active" : ""}" data-platform-tab="${provider.provider_id}" role="tab" aria-selected="${String(provider.provider_id) === activeProviderId}">
+          ${logo ? `<img class="watch-tab-logo" src="${logo}" alt="">` : ""}
+          <span class="watch-tab-label">${escapeHtml(provider.provider_name)}</span>
+        </button>`;
+      })
+      .join("");
+
+    const platformPanelsHTML = providerList
+      .map(({ provider, countries }) => {
+        const countryChips = [...countries.entries()]
+          .sort((a, b) => regionLabel(a[0]).localeCompare(regionLabel(b[0])))
+          .map(([code, kindSet]) => {
+            const kindsLabel = [...kindSet].join(" / ");
+            return `<span class="country-chip"><span class="watch-tab-flag" aria-hidden="true">${countryFlagEmoji(code)}</span>${escapeHtml(regionLabel(code).replace(/^\S+\s/, ""))} <span class="country-chip-kind">(${escapeHtml(kindsLabel)})</span></span>`;
+          })
+          .join("");
+        return `<div class="watch-tabpanel ${String(provider.provider_id) === activeProviderId ? "is-active" : ""}" data-platform-panel="${provider.provider_id}" role="tabpanel">
+          <p class="platform-panel-sub">${escapeHtml(provider.provider_name)} — ${countries.size}টি দেশে পাওয়া যাচ্ছে</p>
+          <div class="country-chip-row">${countryChips}</div>
+        </div>`;
+      })
+      .join("");
+
     return `
       <div class="watch-panel">
         <div class="watch-panel-head">
@@ -727,31 +815,88 @@
               : ""
           }
         </div>
-        <div class="watch-tabs" role="tablist">${tabsHTML}</div>
-        <div class="watch-tabpanels">${panelsHTML}</div>
+
+        <div class="watch-mode-switch" role="tablist" aria-label="দেখার ধরন">
+          <button class="watch-mode-btn is-active" data-watch-mode="country">দেশ অনুযায়ী</button>
+          <button class="watch-mode-btn" data-watch-mode="platform">প্ল্যাটফর্ম অনুযায়ী</button>
+        </div>
+
+        <div class="watch-mode-panel is-active" data-mode-panel="country">
+          <div class="watch-tabs" role="tablist">${tabsHTML}</div>
+          <div class="watch-tabpanels">${panelsHTML}</div>
+        </div>
+
+        <div class="watch-mode-panel" data-mode-panel="platform" hidden>
+          <div class="watch-tabs" role="tablist">${platformTabsHTML}</div>
+          <div class="watch-tabpanels">${platformPanelsHTML}</div>
+        </div>
+
         <p class="tmdb-attribution">তথ্যসূত্র: TMDB (JustWatch ডেটা)। সাবস্ক্রিপশন লাগতে পারে।</p>
       </div>
     `;
   }
 
   function bindWatchPanelEvents(container) {
-    const tabs = container.querySelector(".watch-tabs");
-    if (!tabs) return;
-    tabs.addEventListener("click", (e) => {
-      const btn = e.target.closest("[data-region-tab]");
-      if (!btn) return;
-      const code = btn.dataset.regionTab;
-      container.querySelectorAll(".watch-tab").forEach((t) => {
-        const active = t.dataset.regionTab === code;
-        t.classList.toggle("is-active", active);
-        t.setAttribute("aria-selected", String(active));
+    const panel = container.querySelector(".watch-panel");
+    if (!panel) return;
+
+    // Country-tab clicks (existing "pick a country" mode)
+    const tabs = panel.querySelector('.watch-mode-panel[data-mode-panel="country"] .watch-tabs');
+    if (tabs) {
+      tabs.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-region-tab]");
+        if (!btn) return;
+        const code = btn.dataset.regionTab;
+        const scope = tabs.closest(".watch-mode-panel");
+        scope.querySelectorAll(".watch-tab").forEach((t) => {
+          const active = t.dataset.regionTab === code;
+          t.classList.toggle("is-active", active);
+          t.setAttribute("aria-selected", String(active));
+        });
+        scope.querySelectorAll(".watch-tabpanel").forEach((p) => {
+          p.classList.toggle("is-active", p.dataset.regionPanel === code);
+        });
+        btn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
       });
-      container.querySelectorAll(".watch-tabpanel").forEach((p) => {
-        p.classList.toggle("is-active", p.dataset.regionPanel === code);
+    }
+
+    // Platform-tab clicks ("pick a platform, see which countries" mode)
+    const platformTabs = panel.querySelector('.watch-mode-panel[data-mode-panel="platform"] .watch-tabs');
+    if (platformTabs) {
+      platformTabs.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-platform-tab]");
+        if (!btn) return;
+        const pid = btn.dataset.platformTab;
+        const scope = platformTabs.closest(".watch-mode-panel");
+        scope.querySelectorAll(".watch-tab").forEach((t) => {
+          const active = t.dataset.platformTab === pid;
+          t.classList.toggle("is-active", active);
+          t.setAttribute("aria-selected", String(active));
+        });
+        scope.querySelectorAll(".watch-tabpanel").forEach((p) => {
+          p.classList.toggle("is-active", p.dataset.platformPanel === pid);
+        });
+        btn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
       });
-      // Scroll the chosen tab into view on small screens.
-      btn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-    });
+    }
+
+    // Mode switch (দেশ অনুযায়ী <-> প্ল্যাটফর্ম অনুযায়ী)
+    const modeSwitch = panel.querySelector(".watch-mode-switch");
+    if (modeSwitch) {
+      modeSwitch.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-watch-mode]");
+        if (!btn) return;
+        const mode = btn.dataset.watchMode;
+        modeSwitch.querySelectorAll(".watch-mode-btn").forEach((b) => {
+          b.classList.toggle("is-active", b.dataset.watchMode === mode);
+        });
+        panel.querySelectorAll(".watch-mode-panel").forEach((p) => {
+          const active = p.dataset.modePanel === mode;
+          p.classList.toggle("is-active", active);
+          p.hidden = !active;
+        });
+      });
+    }
   }
 
   function providerChipHTML(p, link) {
@@ -968,7 +1113,7 @@
 
     const q = $("#heroSearchInput").value.trim();
     if (q) {
-      runSearch(q);
+      runSearch(q, 1, { keepFilters: true });
     } else {
       // No query yet — apply the filter to the trending rail right here
       renderTrendingWithFilter();
