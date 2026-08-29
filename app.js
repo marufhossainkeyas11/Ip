@@ -469,7 +469,7 @@
               : `<div class="poster-fallback">${escapeHtml(title)}</div>`
           }
           <span class="poster-badge poster-badge--rent">${typeLabel}</span>
-          <button class="poster-quickadd ${inList ? "is-added" : ""}" data-quickadd aria-label="তালিকায় যোগ করুন" title="তালিকায় যোগ করুন">${inList ? "✓" : "+"}</button>
+          <button class="poster-quickadd ${inList ? "is-added" : ""}" data-quickadd aria-label="${inList ? "তালিকা থেকে সরান" : "তালিকায় যোগ করুন"}" title="${inList ? "তালিকা থেকে সরান" : "তালিকায় যোগ করুন"}">+</button>
         </div>
         <p class="poster-title">${escapeHtml(title)}</p>
         <p class="poster-year">${year || "—"}</p>
@@ -494,12 +494,14 @@
         if (isInWatchlist(type, id)) {
           removeFromWatchlist(type, id);
           quickAdd.classList.remove("is-added");
-          quickAdd.textContent = "+";
+          quickAdd.setAttribute("aria-label", "তালিকায় যোগ করুন");
+          quickAdd.setAttribute("title", "তালিকায় যোগ করুন");
           showToast("তালিকা থেকে সরানো হয়েছে");
         } else if (item) {
           addToWatchlist(item);
           quickAdd.classList.add("is-added");
-          quickAdd.textContent = "✓";
+          quickAdd.setAttribute("aria-label", "তালিকা থেকে সরান");
+          quickAdd.setAttribute("title", "তালিকা থেকে সরান");
           showToast("তালিকায় যোগ হয়েছে");
         }
         renderHomeWatchlistRail();
@@ -793,17 +795,28 @@
   }
 
   /* ---------- TRENDING RAIL (home) ---------- */
+  let trendingItems = [];
+
   async function loadTrending() {
     try {
       const data = await tmdbFetch("/trending/all/week");
-      const items = (data.results || []).filter((r) => r.media_type === "movie" || r.media_type === "tv").slice(0, 15);
-      const track = $("#trendingTrack");
-      track.innerHTML = items.map(posterCardHTML).join("");
-      bindPosterCardEvents(track);
+      trendingItems = (data.results || []).filter((r) => r.media_type === "movie" || r.media_type === "tv").slice(0, 15);
+      renderTrendingWithFilter();
     } catch (err) {
       $("#trendingTrack").innerHTML = `<p style="color:var(--ink-faint);font-size:13px">ট্রেন্ডিং লোড করা যায়নি।</p>`;
       console.error(err);
     }
+  }
+
+  function renderTrendingWithFilter() {
+    const track = $("#trendingTrack");
+    const filtered = applyFilters(trendingItems);
+    if (filtered.length === 0) {
+      track.innerHTML = `<p style="color:var(--ink-faint);font-size:13px">এই ফিল্টারে ট্রেন্ডিং কিছু নেই।</p>`;
+      return;
+    }
+    track.innerHTML = filtered.map(posterCardHTML).join("");
+    bindPosterCardEvents(track);
   }
 
   function renderHomeWatchlistRail() {
@@ -903,6 +916,14 @@
   const heroSuggest = setupSuggest($("#heroSearchInput"), $("#heroSuggest"));
   const resultsSuggest = setupSuggest($("#resultsSearchInput"), $("#resultsSuggest"));
 
+  // Avoid the animated smooth-scroll fighting the keyboard's own
+  // "scroll input into view" jump — makes focusing the search box feel instant
+  // instead of causing the page to visibly lurch.
+  [$("#heroSearchInput"), $("#resultsSearchInput")].forEach((input) => {
+    input.addEventListener("focus", () => document.documentElement.classList.add("is-typing"));
+    input.addEventListener("blur", () => document.documentElement.classList.remove("is-typing"));
+  });
+
   // Hero search
   $("#heroSearchInput").addEventListener("input", (e) => {
     $("#heroClearBtn").hidden = !e.target.value;
@@ -925,18 +946,32 @@
   $("#quickFilters").addEventListener("click", (e) => {
     const chip = e.target.closest(".chip");
     if (!chip) return;
-    const q = $("#heroSearchInput").value.trim();
-    if (chip.dataset.type) {
-      state.filterType = chip.dataset.type;
-    }
-    if (chip.dataset.lang) {
-      state.filterLang = chip.dataset.lang;
+
+    const wasActive = chip.classList.contains("is-active");
+    $$(".chip").forEach((c) => c.classList.remove("is-active"));
+
+    if (wasActive) {
+      // Toggling the same chip off clears the quick filter
       state.filterType = "all";
+      state.filterLang = "";
+    } else {
+      chip.classList.add("is-active");
+      if (chip.dataset.type) {
+        state.filterType = chip.dataset.type;
+        state.filterLang = "";
+      }
+      if (chip.dataset.lang) {
+        state.filterLang = chip.dataset.lang;
+        state.filterType = "all";
+      }
     }
+
+    const q = $("#heroSearchInput").value.trim();
     if (q) {
       runSearch(q);
     } else {
-      showToast("আগে একটা নাম লিখুন, তারপর ফিল্টার প্রয়োগ হবে");
+      // No query yet — apply the filter to the trending rail right here
+      renderTrendingWithFilter();
     }
   });
 
