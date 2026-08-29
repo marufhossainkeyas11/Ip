@@ -12,7 +12,7 @@
   /* ---------- CONFIG ---------- */
   // TMDB v3 API key — read-only, public-safe by TMDB's own terms.
   // Replace with your own free key from https://www.themoviedb.org/settings/api
-  const TMDB_KEY = "773d76e9c544b33992c3eae2e5a761d6";
+  const TMDB_KEY = "YOUR_TMDB_API_KEY_HERE";
   const TMDB_BASE = "https://api.themoviedb.org/3";
   const IMG_BASE = "https://image.tmdb.org/t/p/";
   const POSTER_SIZE = "w342";
@@ -191,10 +191,167 @@
 
   /* ---------- SEARCH ---------- */
   let searchDebounce;
-  function debouncedSearch(query) {
-    clearTimeout(searchDebounce);
-    if (!query.trim()) return;
-    searchDebounce = setTimeout(() => runSearch(query), 350);
+
+  /* ---------- LIVE SUGGESTIONS (typeahead) ---------- */
+  const SUGGEST_LIMIT = 6;
+  let suggestDebounce;
+  let suggestAbortToken = 0;
+  const suggestCache = new Map(); // query -> results[]
+
+  function setupSuggest(inputEl, dropdownEl) {
+    let focusedIndex = -1;
+    let currentQuery = "";
+    let currentItems = [];
+
+    function close() {
+      dropdownEl.hidden = true;
+      dropdownEl.innerHTML = "";
+      inputEl.setAttribute("aria-expanded", "false");
+      focusedIndex = -1;
+    }
+
+    function open() {
+      dropdownEl.hidden = false;
+      inputEl.setAttribute("aria-expanded", "true");
+    }
+
+    function renderLoading() {
+      open();
+      dropdownEl.innerHTML = `<div class="suggest-loading">খোঁজা হচ্ছে...</div>`;
+    }
+
+    function renderItems(items, query) {
+      currentItems = items;
+      focusedIndex = -1;
+      if (items.length === 0) {
+        open();
+        dropdownEl.innerHTML = `<div class="suggest-empty">"${escapeHtml(query)}" এর জন্য কিছু পাওয়া যায়নি</div>`;
+        return;
+      }
+      open();
+      dropdownEl.innerHTML =
+        items
+          .map((item, i) => {
+            const title = item.title || item.name || "নাম নেই";
+            const date = item.release_date || item.first_air_date || "";
+            const year = date ? date.slice(0, 4) : "";
+            const typeLabel = item.media_type === "tv" ? "সিরিজ" : "মুভি";
+            const thumb = posterUrl(item.poster_path, "w92");
+            return `
+            <button type="button" class="suggest-item" role="option" data-suggest-index="${i}">
+              ${
+                thumb
+                  ? `<img class="suggest-thumb" src="${thumb}" alt="" loading="lazy">`
+                  : `<div class="suggest-thumb-fallback">🎬</div>`
+              }
+              <span class="suggest-info">
+                <span class="suggest-title">${escapeHtml(title)}</span>
+                <span class="suggest-meta">${typeLabel}${year ? " · " + year : ""}</span>
+              </span>
+            </button>`;
+          })
+          .join("") +
+        `<button type="button" class="suggest-footer" data-suggest-viewall>"${escapeHtml(query)}" এর সব ফলাফল দেখুন</button>`;
+    }
+
+    async function fetchSuggestions(query) {
+      const token = ++suggestAbortToken;
+      if (suggestCache.has(query)) {
+        renderItems(suggestCache.get(query), query);
+        return;
+      }
+      renderLoading();
+      try {
+        const data = await tmdbFetch("/search/multi", { query, page: 1, include_adult: false });
+        if (token !== suggestAbortToken || inputEl.value.trim() !== query) return; // stale response
+        const items = (data.results || [])
+          .filter((r) => r.media_type === "movie" || r.media_type === "tv")
+          .slice(0, SUGGEST_LIMIT);
+        suggestCache.set(query, items);
+        renderItems(items, query);
+      } catch (err) {
+        if (token !== suggestAbortToken) return;
+        close();
+        console.error(err);
+      }
+    }
+
+    function selectItem(item) {
+      close();
+      inputEl.value = item.title || item.name || "";
+      openDetail(item.media_type, item.id);
+    }
+
+    function updateFocusVisual() {
+      dropdownEl.querySelectorAll(".suggest-item").forEach((el, i) => {
+        el.classList.toggle("is-focused", i === focusedIndex);
+      });
+      const focusedEl = dropdownEl.querySelector(".suggest-item.is-focused");
+      if (focusedEl) focusedEl.scrollIntoView({ block: "nearest" });
+    }
+
+    inputEl.addEventListener("input", () => {
+      const q = inputEl.value.trim();
+      currentQuery = q;
+      clearTimeout(suggestDebounce);
+      if (!q) {
+        close();
+        return;
+      }
+      suggestDebounce = setTimeout(() => {
+        if (inputEl.value.trim() === q) fetchSuggestions(q);
+      }, 220);
+    });
+
+    inputEl.addEventListener("keydown", (e) => {
+      if (dropdownEl.hidden) return;
+      const itemCount = currentItems.length;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (itemCount === 0) return;
+        focusedIndex = (focusedIndex + 1) % itemCount;
+        updateFocusVisual();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (itemCount === 0) return;
+        focusedIndex = (focusedIndex - 1 + itemCount) % itemCount;
+        updateFocusVisual();
+      } else if (e.key === "Enter") {
+        if (focusedIndex >= 0 && currentItems[focusedIndex]) {
+          e.preventDefault();
+          selectItem(currentItems[focusedIndex]);
+        } else {
+          close();
+        }
+      } else if (e.key === "Escape") {
+        close();
+      }
+    });
+
+    dropdownEl.addEventListener("click", (e) => {
+      const viewAllBtn = e.target.closest("[data-suggest-viewall]");
+      if (viewAllBtn) {
+        close();
+        clearTimeout(searchDebounce);
+        runSearch(currentQuery);
+        return;
+      }
+      const itemBtn = e.target.closest("[data-suggest-index]");
+      if (itemBtn) {
+        const idx = Number(itemBtn.dataset.suggestIndex);
+        if (currentItems[idx]) selectItem(currentItems[idx]);
+      }
+    });
+
+    inputEl.addEventListener("focus", () => {
+      if (currentItems.length && inputEl.value.trim() === currentQuery && currentQuery) open();
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!dropdownEl.hidden && !e.target.closest(".search-form-wrap")) close();
+    });
+
+    return { close };
   }
 
   async function runSearch(query, page = 1) {
@@ -469,73 +626,130 @@
         renderDetail(currentDetailItem);
       });
     }
+
+    bindWatchPanelEvents($("#detailContent"));
+  }
+
+  // Curated set of major regions to offer as tabs when the user hasn't
+  // picked a region — keeps the panel from listing 90 countries at once.
+  const GLOBAL_PREVIEW = ["BD", "US", "IN", "GB", "CA", "AU", "JP", "KR", "DE", "FR", "AE", "SA", "SG", "PK"];
+
+  function dedupeProviders(arr) {
+    const seen = new Set();
+    return arr.filter((p) => (seen.has(p.provider_id) ? false : (seen.add(p.provider_id), true)));
+  }
+
+  function countryFlagEmoji(code) {
+    if (!code || code.length !== 2) return "🌐";
+    return String.fromCodePoint(...[...code.toUpperCase()].map((c) => 127397 + c.charCodeAt(0)));
+  }
+
+  function watchGroupBodyHTML(regionData) {
+    if (!regionData) return "";
+    const { flatrate, rent, buy, ads, free } = regionData;
+    const streamProviders = dedupeProviders([...(flatrate || []), ...(free || []), ...(ads || [])]);
+    const rentBuyProviders = dedupeProviders([...(rent || []), ...(buy || [])]);
+    if (streamProviders.length === 0 && rentBuyProviders.length === 0) return "";
+
+    let html = "";
+    if (streamProviders.length) {
+      html += `<div class="watch-subgroup">
+        <h4 class="watch-subgroup-title"><span class="dot dot--stream"></span>স্ট্রিমিং-এ আছে</h4>
+        <div class="provider-row">${streamProviders.map((p) => providerChipHTML(p, regionData.link)).join("")}</div>
+      </div>`;
+    }
+    if (rentBuyProviders.length) {
+      html += `<div class="watch-subgroup">
+        <h4 class="watch-subgroup-title"><span class="dot dot--rent"></span>রেন্ট / কেনার জন্য</h4>
+        <div class="provider-row">${rentBuyProviders.map((p) => providerChipHTML(p, regionData.link)).join("")}</div>
+      </div>`;
+    }
+    return html;
+  }
+
+  function watchEmptyHTML(label, mediaType, id) {
+    return `<div class="watch-empty">এই দেশে (${escapeHtml(label)}) এখনো অফিসিয়াল স্ট্রিমিং তথ্য পাওয়া যায়নি। নিচ থেকে অন্য দেশ ট্রাই করুন, অথবা <a href="https://www.themoviedb.org/${mediaType}/${id}/watch" target="_blank" rel="noopener">TMDB-তে সরাসরি দেখুন</a>।</div>`;
   }
 
   function renderWatchProviders(providers, mediaType, id) {
     const results = providers.results || {};
-    const regionCode = state.region;
-    const regionsToShow = regionCode ? [regionCode] : Object.keys(results).slice(0, 0); // handled below
+    const availableCodes = Object.keys(results);
 
-    // Global view: show a curated set of major regions that actually have data,
-    // so the page isn't overwhelming with 90 countries.
-    const GLOBAL_PREVIEW = ["BD", "US", "IN", "GB", "CA", "AU", "JP", "KR", "DE", "FR", "AE", "SA"];
-
-    function groupBlock(regionData, label) {
-      if (!regionData) return "";
-      const { flatrate, rent, buy, ads, free } = regionData;
-      const streamProviders = [...(flatrate || []), ...(free || []), ...(ads || [])];
-      const rentBuyProviders = [...(rent || []), ...(buy || [])];
-      if (streamProviders.length === 0 && rentBuyProviders.length === 0) return "";
-
-      const dedupe = (arr) => {
-        const seen = new Set();
-        return arr.filter((p) => (seen.has(p.provider_id) ? false : (seen.add(p.provider_id), true)));
-      };
-
-      let html = `<div class="watch-group"><h3 class="watch-group-title"><span class="dot dot--stream" style="background:var(--accent)"></span>${label}</h3>`;
-
-      if (streamProviders.length) {
-        html += `<div class="provider-row" style="margin-bottom:10px">`;
-        html += dedupe(streamProviders)
-          .map((p) => providerChipHTML(p, regionData.link))
-          .join("");
-        html += `</div>`;
-      }
-      if (rentBuyProviders.length) {
-        html += `<p style="font-size:12px;color:var(--ink-faint);margin:0 0 8px">রেন্ট / কেনার জন্য:</p>`;
-        html += `<div class="provider-row">`;
-        html += dedupe(rentBuyProviders)
-          .map((p) => providerChipHTML(p, regionData.link))
-          .join("");
-        html += `</div>`;
-      }
-      html += `</div>`;
-      return html;
+    if (availableCodes.length === 0) {
+      return `
+        <div class="watch-panel">
+          <p class="section-label">কোথায় দেখা যাবে</p>
+          <div class="watch-empty">কোনো দেশেই এখনো অফিসিয়াল স্ট্রিমিং তথ্য পাওয়া যায়নি এই টাইটেলের জন্য।</div>
+        </div>`;
     }
 
-    let body = "";
-    if (regionCode) {
-      body = groupBlock(results[regionCode], regionLabel(regionCode));
-      if (!body) {
-        body = `<div class="watch-empty">এই দেশে (${regionLabel(regionCode)}) এখনো অফিসিয়াল স্ট্রিমিং তথ্য পাওয়া যায়নি। উপরের রিজিওন বদলে অন্য দেশ ট্রাই করুন, অথবা <a href="https://www.themoviedb.org/${mediaType}/${id}/watch" target="_blank" rel="noopener">TMDB-তে সরাসরি দেখুন</a>।</div>`;
-      }
-    } else {
-      const available = GLOBAL_PREVIEW.filter((c) => results[c]);
-      if (available.length === 0) {
-        body = `<div class="watch-empty">কোনো দেশেই এখনো অফিসিয়াল স্ট্রিমিং তথ্য পাওয়া যায়নি এই টাইটেলের জন্য।</div>`;
-      } else {
-        body = available.map((c) => groupBlock(results[c], regionLabel(c))).join("");
-      }
-    }
+    // Tab order: saved region first (if it has data), then curated majors
+    // that have data, then anything else left over — so the panel always
+    // opens on the country most relevant to this user.
+    const savedRegion = state.region;
+    const ordered = [];
+    if (savedRegion && results[savedRegion]) ordered.push(savedRegion);
+    GLOBAL_PREVIEW.forEach((c) => {
+      if (results[c] && !ordered.includes(c)) ordered.push(c);
+    });
+    availableCodes.forEach((c) => {
+      if (!ordered.includes(c)) ordered.push(c);
+    });
+
+    const activeCode = ordered[0];
+
+    const tabsHTML = ordered
+      .map(
+        (code) => `
+        <button class="watch-tab ${code === activeCode ? "is-active" : ""}" data-region-tab="${code}" role="tab" aria-selected="${code === activeCode}">
+          <span class="watch-tab-flag" aria-hidden="true">${countryFlagEmoji(code)}</span>
+          <span class="watch-tab-label">${escapeHtml(regionLabel(code).replace(/^\S+\s/, ""))}</span>
+        </button>`
+      )
+      .join("");
+
+    const panelsHTML = ordered
+      .map((code) => {
+        const body = watchGroupBodyHTML(results[code]) || watchEmptyHTML(regionLabel(code), mediaType, id);
+        return `<div class="watch-tabpanel ${code === activeCode ? "is-active" : ""}" data-region-panel="${code}" role="tabpanel">${body}</div>`;
+      })
+      .join("");
 
     return `
       <div class="watch-panel">
-        <p class="section-label">কোথায় দেখা যাবে</p>
-        ${!regionCode ? `<p class="watch-region-note">গ্লোবাল ভিউ দেখানো হচ্ছে — উপরে থেকে একটা নির্দিষ্ট দেশ বেছে নিলে শুধু সেই দেশেরটা দেখাবে।</p>` : ""}
-        ${body}
+        <div class="watch-panel-head">
+          <p class="section-label" style="margin:0">কোথায় দেখা যাবে</p>
+          ${
+            !savedRegion || !results[savedRegion]
+              ? `<p class="watch-region-note">উপরের 🌐 বাটন থেকে নিজের দেশ সেট করলে সেটাই প্রথমে দেখাবে</p>`
+              : ""
+          }
+        </div>
+        <div class="watch-tabs" role="tablist">${tabsHTML}</div>
+        <div class="watch-tabpanels">${panelsHTML}</div>
         <p class="tmdb-attribution">তথ্যসূত্র: TMDB (JustWatch ডেটা)। সাবস্ক্রিপশন লাগতে পারে।</p>
       </div>
     `;
+  }
+
+  function bindWatchPanelEvents(container) {
+    const tabs = container.querySelector(".watch-tabs");
+    if (!tabs) return;
+    tabs.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-region-tab]");
+      if (!btn) return;
+      const code = btn.dataset.regionTab;
+      container.querySelectorAll(".watch-tab").forEach((t) => {
+        const active = t.dataset.regionTab === code;
+        t.classList.toggle("is-active", active);
+        t.setAttribute("aria-selected", String(active));
+      });
+      container.querySelectorAll(".watch-tabpanel").forEach((p) => {
+        p.classList.toggle("is-active", p.dataset.regionPanel === code);
+      });
+      // Scroll the chosen tab into view on small screens.
+      btn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    });
   }
 
   function providerChipHTML(p, link) {
@@ -685,20 +899,25 @@
   }
 
   /* ---------- EVENT WIRING ---------- */
+  // Live suggestion dropdowns
+  const heroSuggest = setupSuggest($("#heroSearchInput"), $("#heroSuggest"));
+  const resultsSuggest = setupSuggest($("#resultsSearchInput"), $("#resultsSuggest"));
+
   // Hero search
   $("#heroSearchInput").addEventListener("input", (e) => {
     $("#heroClearBtn").hidden = !e.target.value;
-    debouncedSearch(e.target.value);
   });
   $("#heroSearchForm").addEventListener("submit", (e) => {
     e.preventDefault();
     clearTimeout(searchDebounce);
+    heroSuggest.close();
     const v = $("#heroSearchInput").value.trim();
     if (v) runSearch(v);
   });
   $("#heroClearBtn").addEventListener("click", () => {
     $("#heroSearchInput").value = "";
     $("#heroClearBtn").hidden = true;
+    heroSuggest.close();
     $("#heroSearchInput").focus();
   });
 
@@ -724,17 +943,18 @@
   // Results search bar
   $("#resultsSearchInput").addEventListener("input", (e) => {
     $("#resultsClearBtn").hidden = !e.target.value;
-    debouncedSearch(e.target.value);
   });
   $("#resultsSearchForm").addEventListener("submit", (e) => {
     e.preventDefault();
     clearTimeout(searchDebounce);
+    resultsSuggest.close();
     const v = $("#resultsSearchInput").value.trim();
     if (v) runSearch(v);
   });
   $("#resultsClearBtn").addEventListener("click", () => {
     $("#resultsSearchInput").value = "";
     $("#resultsClearBtn").hidden = true;
+    resultsSuggest.close();
     $("#resultsSearchInput").focus();
   });
   $("#resultsBackBtn").addEventListener("click", () => history.back());
@@ -806,6 +1026,38 @@
 
   window.addEventListener("popstate", handleHashRoute);
 
+  /* ---------- PWA: SERVICE WORKER ---------- */
+  function registerServiceWorker() {
+    if (!("serviceWorker" in navigator)) return;
+    // Only register over HTTPS or on localhost — avoids console errors
+    // when the file is opened directly (file://) during development.
+    if (location.protocol !== "https:" && location.hostname !== "localhost") return;
+    navigator.serviceWorker.register("sw.js").catch((err) => console.error("SW registration failed", err));
+  }
+
+  /* ---------- PWA: INSTALL PROMPT ---------- */
+  let deferredInstallPrompt = null;
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    $("#installBtn").hidden = false;
+  });
+  window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null;
+    $("#installBtn").hidden = true;
+    showToast("অ্যাপ ইনস্টল হয়ে গেছে 🎬");
+  });
+  const installBtn = document.getElementById("installBtn");
+  if (installBtn) {
+    installBtn.addEventListener("click", async () => {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      installBtn.hidden = true;
+    });
+  }
+
   /* ---------- INIT ---------- */
   function init() {
     initTheme();
@@ -814,6 +1066,7 @@
     updateWatchlistCount();
     renderHomeWatchlistRail();
     loadTrending();
+    registerServiceWorker();
 
     if (TMDB_KEY === "YOUR_TMDB_API_KEY_HERE") {
       showToast("⚠️ app.js এ TMDB API কী বসান");
