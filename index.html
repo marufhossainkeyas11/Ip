@@ -76,6 +76,22 @@
         <button class="chip" data-type="tv">সিরিজ</button>
         <button class="chip" data-lang="ja">অ্যানিমে (JP)</button>
       </div>
+
+      <div class="lang-browse">
+        <p class="lang-browse-label">অথবা ভাষা অনুযায়ী দেখুন</p>
+        <div class="lang-browse-row" id="langBrowseRow">
+          <button class="lang-chip" data-browse-lang="bn">বাংলা</button>
+          <button class="lang-chip" data-browse-lang="hi">হিন্দি</button>
+          <button class="lang-chip" data-browse-lang="en">ইংরেজি</button>
+          <button class="lang-chip" data-browse-lang="ko">কোরিয়ান</button>
+          <button class="lang-chip" data-browse-lang="ja">জাপানি</button>
+          <button class="lang-chip" data-browse-lang="es">স্প্যানিশ</button>
+          <button class="lang-chip" data-browse-lang="ta">তামিল</button>
+          <button class="lang-chip" data-browse-lang="te">তেলুগু</button>
+          <button class="lang-chip" data-browse-lang="tr">তুর্কি</button>
+          <button class="lang-chip" data-browse-lang="fr">ফরাসি</button>
+        </div>
+      </div>
     </section>
 
     <section class="home-rail" id="trendingRail">
@@ -120,8 +136,18 @@
         <button class="filter-pill" data-filter-type="movie">মুভি</button>
         <button class="filter-pill" data-filter-type="tv">সিরিজ</button>
       </div>
-      <select class="filter-select" id="langFilter" aria-label="ভাষা ফিল্টার">
+      <select class="filter-select" id="langFilter" aria-label="ভাষা অনুযায়ী দেখুন">
         <option value="">যেকোনো ভাষা</option>
+        <option value="bn">বাংলা</option>
+        <option value="hi">হিন্দি</option>
+        <option value="en">ইংরেজি</option>
+        <option value="ko">কোরিয়ান</option>
+        <option value="ja">জাপানি</option>
+        <option value="es">স্প্যানিশ</option>
+        <option value="ta">তামিল</option>
+        <option value="te">তেলুগু</option>
+        <option value="tr">তুর্কি</option>
+        <option value="fr">ফরাসি</option>
       </select>
       <select class="filter-select" id="yearFilter" aria-label="বছর ফিল্টার">
         <option value="">যেকোনো বছর</option>

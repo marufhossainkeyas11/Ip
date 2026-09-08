@@ -356,6 +356,7 @@
 
   async function runSearch(query, page = 1, opts = {}) {
     const { keepFilters = false } = opts;
+    discoverLang = null;
     state.query = query;
     state.page = page;
     // A fresh search should never be silently hidden by a filter left on
@@ -416,6 +417,64 @@
       .join("");
   }
 
+  // Language display names for Bengali UI (falls back to the code itself).
+  const LANG_LABELS_BN = {
+    bn: "বাংলা", hi: "হিন্দি", en: "ইংরেজি", ko: "কোরিয়ান", ja: "জাপানি",
+    es: "স্প্যানিশ", ta: "তামিল", te: "তেলুগু", tr: "তুর্কি", fr: "ফরাসি",
+  };
+  function langLabel(code) {
+    if (LANG_LABELS_BN[code]) return LANG_LABELS_BN[code];
+    try {
+      const name = new Intl.DisplayNames(["bn"], { type: "language" }).of(code);
+      if (name) return name;
+    } catch {}
+    return code.toUpperCase();
+  }
+
+  // Real "browse by language" — uses TMDB discover (not a client-side
+  // filter over whatever happened to already be loaded). Pulls both
+  // movie and tv discover pages for the language and merges them,
+  // sorted by popularity, so it behaves like an actual language listing.
+  let discoverLang = null; // remembers the active browse-by-language code, if any
+  async function runDiscover(langCode, page = 1) {
+    discoverLang = langCode;
+    state.query = "";
+    state.page = page;
+    state.filterLang = langCode;
+    if (page === 1) {
+      state.filterType = "all";
+      $$(".chip").forEach((c) => c.classList.remove("is-active"));
+    }
+    navigateTo("results");
+    $("#resultsSearchInput").value = "";
+    $("#heroSearchInput").value = "";
+    $("#langFilter").value = langCode;
+    $("#resultsMeta").textContent = "খোঁজা হচ্ছে...";
+    $("#emptyState").hidden = true;
+    $("#loadMoreBtn").hidden = true;
+    if (page === 1) $("#resultsGrid").innerHTML = skeletonGrid();
+
+    try {
+      const [movieData, tvData] = await Promise.all([
+        tmdbFetch("/discover/movie", { with_original_language: langCode, sort_by: "popularity.desc", page }),
+        tmdbFetch("/discover/tv", { with_original_language: langCode, sort_by: "popularity.desc", page }),
+      ]);
+      const movies = (movieData.results || []).map((r) => ({ ...r, media_type: "movie" }));
+      const tv = (tvData.results || []).map((r) => ({ ...r, media_type: "tv" }));
+      const merged = [...movies, ...tv].sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+      state.totalPages = Math.max(movieData.total_pages || 1, tvData.total_pages || 1);
+      state.results = page === 1 ? merged : state.results.concat(merged);
+      renderResults(true);
+      $("#resultsMeta").textContent = `${langLabel(langCode)} ভাষার ${state.results.length}টি ফলাফল${state.page < state.totalPages ? "+" : ""}`;
+    } catch (err) {
+      $("#resultsGrid").innerHTML = "";
+      $("#emptyState").hidden = false;
+      $("#emptyState").querySelector("h3").textContent = "সমস্যা হয়েছে";
+      $("#emptyState").querySelector("p").textContent = "ইন্টারনেট সংযোগ চেক করুন, একটু পর আবার চেষ্টা করুন।";
+      console.error(err);
+    }
+  }
+
   function applyFilters(list) {
     return list.filter((item) => {
       if (state.filterType !== "all" && item.media_type !== state.filterType) return false;
@@ -428,23 +487,37 @@
     });
   }
 
-  function renderResults() {
-    const filtered = applyFilters(state.results);
+  function renderResults(isDiscoverMode = false) {
+    // In discover-by-language mode the results are already all in that
+    // language and already merged across movie+tv, so only the type
+    // filter (movie/tv/all) and year still need client-side narrowing.
+    const filtered = isDiscoverMode
+      ? state.results.filter((item) => state.filterType === "all" || item.media_type === state.filterType)
+          .filter((item) => {
+            if (!state.filterYear) return true;
+            const date = item.release_date || item.first_air_date || "";
+            return date.startsWith(state.filterYear);
+          })
+      : applyFilters(state.results);
     const grid = $("#resultsGrid");
 
     if (filtered.length === 0) {
       grid.innerHTML = "";
       $("#emptyState").hidden = false;
       $("#emptyState").querySelector("h3").textContent = "কিছু পাওয়া যায়নি";
-      $("#emptyState").querySelector("p").textContent = "বানান চেক করুন, অথবা ফিল্টার মুছে দেখুন।";
-      $("#resultsMeta").textContent = "";
+      $("#emptyState").querySelector("p").textContent = isDiscoverMode
+        ? "এই ভাষায় এখনো তথ্য পাওয়া যায়নি, অথবা অন্য ফিল্টার ট্রাই করুন।"
+        : "বানান চেক করুন, অথবা ফিল্টার মুছে দেখুন।";
+      if (!isDiscoverMode) $("#resultsMeta").textContent = "";
     } else {
       $("#emptyState").hidden = true;
       grid.innerHTML = filtered.map(posterCardHTML).join("");
-      $("#resultsMeta").textContent = `"${state.query}" এর জন্য ${filtered.length}টি ফলাফল${state.page < state.totalPages ? "+" : ""}`;
+      if (!isDiscoverMode) {
+        $("#resultsMeta").textContent = `"${state.query}" এর জন্য ${filtered.length}টি ফলাফল${state.page < state.totalPages ? "+" : ""}`;
+      }
     }
 
-    populateLangFilterOptions();
+    if (!isDiscoverMode) populateLangFilterOptions();
     syncFilterPillUI();
     $("#loadMoreBtn").hidden = state.page >= state.totalPages;
     bindPosterCardEvents(grid);
@@ -459,24 +532,11 @@
     syncClearFiltersVisibility();
   }
 
+  // The language dropdown's options are now a fixed, curated list defined
+  // in index.html (not rebuilt from whatever happened to load) — this just
+  // keeps the visible selection in sync with state.
   function populateLangFilterOptions() {
-    const sel = $("#langFilter");
-    const current = state.filterLang;
-    const langs = [...new Set(state.results.map((r) => r.original_language).filter(Boolean))].sort();
-    const langNames = new Intl.DisplayNames(["bn"], { type: "language" });
-    sel.innerHTML =
-      `<option value="">যেকোনো ভাষা</option>` +
-      langs
-        .map((code) => {
-          let label = code.toUpperCase();
-          try {
-            const name = langNames.of(code);
-            if (name) label = name;
-          } catch {}
-          return `<option value="${code}">${label}</option>`;
-        })
-        .join("");
-    sel.value = current;
+    $("#langFilter").value = state.filterLang || "";
   }
 
   /* ---------- POSTER CARD ---------- */
@@ -1087,6 +1147,16 @@
     $("#heroSearchInput").focus();
   });
 
+  // Language browse row on home ("ভাষা অনুযায়ী দেখুন")
+  const langBrowseRow = $("#langBrowseRow");
+  if (langBrowseRow) {
+    langBrowseRow.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-browse-lang]");
+      if (!btn) return;
+      runDiscover(btn.dataset.browseLang, 1);
+    });
+  }
+
   // Quick filter chips on home
   $("#quickFilters").addEventListener("click", (e) => {
     const chip = e.target.closest(".chip");
@@ -1152,7 +1222,21 @@
     syncClearFiltersVisibility();
   });
   $("#langFilter").addEventListener("change", (e) => {
-    state.filterLang = e.target.value;
+    const lang = e.target.value;
+    if (!state.query) {
+      // No active text search — a language pick here means "browse this
+      // language", so go fetch it for real instead of filtering nothing.
+      if (lang) {
+        runDiscover(lang, 1);
+      } else {
+        discoverLang = null;
+        state.filterLang = "";
+        state.results = [];
+        renderResults();
+      }
+      return;
+    }
+    state.filterLang = lang;
     renderResults();
     syncClearFiltersVisibility();
   });
@@ -1169,6 +1253,12 @@
     $('.filter-pill[data-filter-type="all"]').classList.add("is-active");
     $("#langFilter").value = "";
     $("#yearFilter").value = "";
+    if (discoverLang) {
+      discoverLang = null;
+      state.results = [];
+      $("#resultsMeta").textContent = "";
+      $("#emptyState").hidden = true;
+    }
     renderResults();
     syncClearFiltersVisibility();
   });
@@ -1189,7 +1279,11 @@
 
   // Load more
   $("#loadMoreBtn").addEventListener("click", () => {
-    runSearch(state.query, state.page + 1);
+    if (discoverLang) {
+      runDiscover(discoverLang, state.page + 1);
+    } else {
+      runSearch(state.query, state.page + 1);
+    }
   });
 
   // Nav brand / watchlist icon
