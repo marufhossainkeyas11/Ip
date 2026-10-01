@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e1e2f">
+    <title>Combo Extractor Pro</title>
+    <!-- Dynamic Manifest for PWA will be injected here -->
+    <link rel="manifest" id="manifest-placeholder">
+    
+    <style>
+        :root {
+            --bg-color: #0f0f17;
+            --card-bg: #1e1e2f;
+            --primary: #e14eca;
+            --primary-hover: #c33eb0;
+            --secondary: #00f2c3;
+            --text-main: #ffffff;
+            --text-muted: #8e8e9f;
+            --border: #2b2b40;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 900px;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--secondary);
+        }
+
+        .logo svg {
+            width: 32px;
+            height: 32px;
+            fill: var(--primary);
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--secondary);
+            color: var(--secondary);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--secondary);
+            color: var(--bg-color);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 15px;
+            border-radius: 8px;
+            resize: vertical;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            background-color: #171724;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        select, input[type="file"] {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 6px;
+            flex: 1;
+            min-width: 200px;
+            font-size: 14px;
+        }
+
+        .actions-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .stats {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .stats span {
+            color: var(--secondary);
+            font-weight: bold;
+        }
+
+        #installPwaBtn {
+            display: none; /* Hidden by default, shown if installable */
+            background-color: var(--secondary);
+            color: var(--bg-color);
+        }
+        
+        .file-upload-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div class="logo">
+                <!-- SVG Icon inline -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                Combo Extractor Pro
+            </div>
+            <button id="installPwaBtn" class="btn">
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                Install App
+            </button>
+        </header>
+
+        <main style="display: flex; flex-direction: column; gap: 20px;">
+            
+            <div class="input-group">
+                <label>Input Data (Paste text or upload .txt file)</label>
+                <div class="file-upload-wrapper">
+                    <input type="file" id="fileInput" accept=".txt">
+                </div>
+                <textarea id="inputText" placeholder="name@email.com:pass123&#10;01712345678:mypwd&#10;random_text:something"></textarea>
+            </div>
+
+            <div class="controls">
+                <select id="filterMode">
+                    <option value="email">Email : Password (মেইল ফরম্যাট)</option>
+                    <option value="number">Number : Password (নাম্বার ফরম্যাট)</option>
+                    <option value="both">Email OR Number : Password (দুটোই)</option>
+                    <option value="any">Anything : Anything (যেকোনো কিছু, মাঝে ':' থাকতে হবে)</option>
+                </select>
+                <button id="processBtn" class="btn" style="flex: 1;">
+                    <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+                    Extract & Filter
+                </button>
+            </div>
+
+            <div class="input-group">
+                <label>Output Result</label>
+                <textarea id="outputText" readonly placeholder="Filtered results will appear here..."></textarea>
+                
+                <div class="actions-row">
+                    <div class="stats">
+                        Total Lines: <span id="totalLines">0</span> | 
+                        Extracted: <span id="extractedLines">0</span>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="copyBtn" class="btn btn-outline">Copy Result</button>
+                        <button id="downloadBtn" class="btn btn-outline">Download .txt</button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // --- 1. Core Logic & Regex (Termux Alternative) ---
+        const btnProcess = document.getElementById('processBtn');
+        const inputText = document.getElementById('inputText');
+        const outputText = document.getElementById('outputText');
+        const filterMode = document.getElementById('filterMode');
+        const fileInput = document.getElementById('fileInput');
+
+        // Regex rules mapping
+        const rules = {
+            // [a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}:([^:\s]+)
+            email: /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}):([^\s:]+)/g,
+            // Numbers with optional + (e.g., phone numbers 8-15 digits)
+            number: /(\+?\d{8,15}):([^\s:]+)/g,
+            // Either Email or Number
+            both: /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|\+?\d{8,15}):([^\s:]+)/g,
+            // Anything:Something (must have colon, no spaces inside the extracted match)
+            any: /([^\s:]+):([^\s:]+)/g
+        };
+
+        btnProcess.addEventListener('click', () => {
+            const text = inputText.value;
+            const mode = filterMode.value;
+            const regex = rules[mode];
+            
+            const lines = text.split(/\r?\n/);
+            let extractedData = [];
+
+            lines.forEach(line => {
+                // ":" না থাকলে সেই লাইন বাদ (Skip lines without colon)
+                if (!line.includes(':')) return;
+
+                // grep -oP এর মত শুধু ম্যাচ হওয়া অংশটুকু বের করবে
+                let match;
+                // loop through multiple matches in a single line if they exist
+                while ((match = regex.exec(line)) !== null) {
+                    extractedData.push(match[0]); 
+                }
+            });
+
+            // Update UI
+            outputText.value = extractedData.join('\n');
+            document.getElementById('totalLines').innerText = lines.length || 0;
+            document.getElementById('extractedLines').innerText = extractedData.length;
+        });
+
+        // --- 2. File Upload Handler ---
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                inputText.value = e.target.result;
+            };
+            reader.readAsText(file);
+        });
+
+        // --- 3. Copy & Download Handlers ---
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            if(!outputText.value) return;
+            navigator.clipboard.writeText(outputText.value).then(() => {
+                alert('Copied to clipboard!');
+            });
+        });
+
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            if(!outputText.value) return;
+            const blob = new Blob([outputText.value], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'final_result.txt';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        });
+
+        // --- 4. Dynamic PWA & Service Worker (Inline) ---
+        // Create an SVG icon for PWA dynamically
+        const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="%23e14eca"><rect width="512" height="512" fill="%231e1e2f"/><path d="M256 48C141.13 48 48 141.13 48 256s93.13 208 208 208 208-93.13 208-208S370.87 48 256 48zm-24 374.58c-84.34-10.51-149.33-82.13-149.33-166.58 0-13.25 1.71-25.81 4.48-38.19L192 256v21.33c0 23.47 19.2 42.67 42.67 42.67v21.33c0 11.73-9.6 21.33-21.33 21.33h-21.33v64c0 11.73-9.6 21.33-21.33 21.33v14.59zm147.2-54.19c-5.55-17.28-21.33-29.65-40.53-29.65h-21.33v-64c0-11.73-9.6-21.33-21.33-21.33h-42.67v-42.67c0-11.73 9.6-21.33 21.33-21.33h42.67c23.47 0 42.67-19.2 42.67-42.67v-8.75c62.51 25.39 106.67 86.61 106.67 158.08 0 44.37-17.07 84.69-47.47 114.32z" fill="%23e14eca"/></svg>`;
+        const encodedIcon = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgIcon);
+
+        // Generate manifest inline
+        const manifest = {
+            name: "Combo Extractor Pro",
+            short_name: "Extractor",
+            description: "Advanced Text and Combo Extraction Tool",
+            start_url: location.href,
+            display: "standalone",
+            background_color: "#0f0f17",
+            theme_color: "#1e1e2f",
+            icons: [{
+                src: encodedIcon,
+                sizes: "512x512",
+                type: "image/svg+xml",
+                purpose: "any maskable"
+            }]
+        };
+
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+        document.getElementById('manifest-placeholder').href = URL.createObjectURL(manifestBlob);
+
+        // Generate Service Worker inline to make it completely offline and installable
+        const swCode = `
+            const CACHE_NAME = 'extractor-v1';
+            self.addEventListener('install', event => {
+                self.skipWaiting();
+            });
+            self.addEventListener('activate', event => {
+                event.waitUntil(clients.claim());
+            });
+            self.addEventListener('fetch', event => {
+                // Network first, fallback to offline (since it's a single file app)
+                event.respondWith(
+                    fetch(event.request).catch(() => {
+                        return new Response("Offline Tool Active", {status: 200});
+                    })
+                );
+            });
+        `;
+        const swBlob = new Blob([swCode], { type: 'application/javascript' });
+        const swUrl = URL.createObjectURL(swBlob);
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register(swUrl).then(() => {
+                console.log("Offline Service Worker Registered!");
+            }).catch(err => console.error(err));
+        }
+
+        // PWA Install Prompt Logic
+        let deferredPrompt;
+        const installBtn = document.getElementById('installPwaBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.style.display = 'flex';
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    installBtn.style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        });
+    </script>
+</body>
+</html>
