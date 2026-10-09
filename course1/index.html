@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghoori Learning Students</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Custom smooth scrollbar for course lists */
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f0fdf4; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #86efac; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #4ade80; }
+        
+        #toast { transition: opacity 0.3s, transform 0.3s; z-index: 1000; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased min-h-screen">
+
+    <div class="max-w-7xl mx-auto p-4 md:p-8">
+        <!-- Header Section -->
+        <div class="bg-white rounded-2xl shadow-sm p-6 mb-8 border border-gray-200">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900 flex items-center gap-2">
+                        <i class="fa-solid fa-laptop-code text-teal-600"></i> Ghoori Learning Data
+                    </h1>
+                    <p class="text-gray-500 text-sm mt-1">Student directory and skill development courses</p>
+                </div>
+                
+                <div class="bg-teal-50 border border-teal-100 text-teal-800 px-4 py-2 rounded-xl font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-users"></i>
+                    <span id="totalCount">Total: 0</span>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="mt-6 relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fa-solid fa-search text-gray-400"></i>
+                </div>
+                <input type="text" id="searchInput" 
+                    class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 sm:text-sm transition-all" 
+                    placeholder="Search by student name, mobile number, or course name...">
+            </div>
+        </div>
+
+        <!-- Students Grid (Cards) -->
+        <div id="studentsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Cards will be injected here via JavaScript -->
+        </div>
+
+        <!-- No Results Found Message -->
+        <div id="noResults" class="hidden text-center py-12">
+            <i class="fa-solid fa-folder-open text-4xl text-gray-300 mb-3"></i>
+            <h3 class="text-lg font-medium text-gray-900">No students found</h3>
+            <p class="text-gray-500">Try adjusting your search keywords.</p>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl opacity-0 pointer-events-none flex items-center gap-3">
+        <i class="fa-solid fa-check-circle text-green-400"></i>
+        <span class="font-medium tracking-wide">Login details copied successfully!</span>
+    </div>
+
+    <!-- Script Section -->
+    <script>
+        const rawData = `
+
+01521515098:Rifat@2015 | Username = 01521515098 | Mobile = 01521515098 | Role = Student | Name = Ahsanul Haque Rifat | CoursesCount = 2 | Course = Creative Content Design Techniques | Course = SEO Friendly Content Writing Masterclass
+
+01612344477:frabbi001 | Username = 01612344477 | Mobile = 01612344477 | Role = Student | Name = Fazlay Rabbi | CoursesCount = 1 | Course = Mobile Photography
+
+01315778261:62437906 | Username = 01315778261 | Mobile = 01315778261 | Role = Student | Name = Md Mohidul | CoursesCount = 1 | Course = Basic Graphics Design Course
+
+01730583525:akber@rabby29 | Username = 01730583525 | Mobile = 01730583525 | Role = Student | Name = Md Akber Ali Rabby | CoursesCount = 1 | Course = Data Entry Advanced Course
+
+01792159411:siam440@12 | Username = 01792159411 | Mobile = 01792159411 | Role = Student | Name = Sirajul Islam | CoursesCount = 1 | Course = Photography
+
+01751468722:Sumon.12345 | Username = 01751468722 | Mobile = 01751468722 | Role = Student | Name = Sumon Sarkar | CoursesCount = 1 | Course = Advance English-Speaking Course
+
+01518484371:123456 | Username = 01518484371 | Mobile = 01518484371 | Role = Student | Name = Md Zahidul islam | CoursesCount = 3 | Course = Communication Mastery | Course = Banner Design with Canva | Course = Leadership Skills
+
+01684778559:jaha2580 | Username = 01684778559 | Mobile = 01684778559 | Role = Student | Name = ANOWAR JAHAN | CoursesCount = 1 | Course = Advance English-Speaking Course
+
+01719733484:ra1212ed | Username = 01719733484 | Mobile = 01719733484 | Role = Student | Name = Md Rashedul Hasan | CoursesCount = 1 | Course = Basic Graphics Design Course
+
+01842336325:123456789 | Username = 01842336325 | Mobile = 01842336325 | Role = Student | Name = Nafisur Rahman | CoursesCount = 1 | Course = A Complete Guide to Create necessary graphic without adobe Photoshop and illustrator
+
+01906292452:geekycloud@@-+ | Username = 01906292452 | Mobile = 01906292452 | Role = Student | Name = Geeky Cloud | CoursesCount = 3 | Course = Banner Design with Canva | Course = Time Management | Course = ISP Technician Basics
+
+01632888147:FAHIM@420 | Username = 01632888147 | Mobile = 01521778603 | Role = Student | Name = Md.Fahim Rahman | CoursesCount = 1 | Course = A Complete Guide to Create necessary graphic without adobe Photoshop and illustrator
+
+01711930968:Sadiqul1234 | Username = 01711930968 | Mobile = 01711930968 | Role = Student | Name = Md Sadiqul Islam | CoursesCount = 1 | Course = Basic Digital Marketing Course
+
+01876265751:Tazuddin@51 | Username = 01876265751 | Mobile = 01876265751 | Role = Student | Name = Taj Uddin | CoursesCount = 1 | Course = Advanced Graphics Design Course
+
+01318437742:Jakaria12@# | Username = 01318437742 | Mobile = 01318437742 | Role = Student | Name = Md: Jakaria Biswas | CoursesCount = 6 | Course = Audio Enhancement & Noise Removal | Course = Full Stack Web Development Roadmap | Course = Fundamentals of Spoken English | Course = Creative Content Design Techniques | Course = Online Class Techniques | Course = A Complete Guide to Create necessary graphic without adobe Photoshop and illustrator
+
+01521515356:ahmad@12345 | Username = 01521515356 | Mobile = 01521515356 | Role = Student | Name = Ahmad Bin Shamsuddin | CoursesCount = 1 | Course = SEO Friendly Content Writing Masterclass
+
+01711135013:Ghoori@2008 | Username = 01711135013 | Mobile = 01711135013 | Role = Student | Name = Tarun Banerjee | CoursesCount = 1 | Course = Video Editing
+
+01887408662:mahtabv1446 | Username = 01887408662 | Mobile = 01887408662 | Role = Student | Name = Kazi Md. Mahtab Uddin | CoursesCount = 1 | Course = Photography
+
+01521433298:79347934 | Username = 01521433298 | Mobile = 01521433298 | Role = Student | Name = Akm Abdullah | CoursesCount = 1 | Course = Ukulele Basic
+
+01867205166:khan709khan | Username = 01867205166 | Mobile = 01867205166 | Role = Student | Name = Anoar Khan | CoursesCount = 1 | Course = Advance English-Speaking Course
+
+01711948567:z@b!ro7 | Username = 01711948567 | Mobile = 01711948567 | Role = Student | Name = Mohammad Rubaiyat Tanvir Hossain | CoursesCount = 1 | Course = Time Management
+
+01710535935:@36z@gdQQ.UF.xP | Username = 01710535935 | Mobile = 01710535935 | Role = Student | Name = Rashedul Islam | CoursesCount = 1 | Course = ISP Technician Basics
+
+01712909843:Mmamoni009@ | Username = 01712909843 | Mobile = 01712909843 | Role = Student | Name = MH Mahamud | CoursesCount = 4 | Course = Fundamentals of IELTS | Course = A Complete Guide to Create necessary graphic without adobe Photoshop and illustrator | Course = Corporate English | Course = Professional Excel Masterclass
+
+01672578301:1234jonybd | Username = 01672578301 | Mobile = 01672578301 | Role = Student | Name = Md Ismail Hossain | CoursesCount = 2 | Course = Graphics Design A to Z | Course = Photography
+
+01832249000:Tamim017 | Username = 01832249000 | Mobile = 01832249000 | Role = Student | Name = Abu Bakar Tamim | CoursesCount = 2 | Course = A Complete Guide to Create necessary graphic without adobe Photoshop and illustrator | Course = Quran Shikkha
+
+01734937486:rakib01734937486 | Username = 01734937486 | Mobile = 01734937486 | Role = Student | Name = 8801734937486 | CoursesCount = 4 | Course = A Complete Guide to Create necessary graphic without adobe Photoshop and illustrator | Course = Basic Digital Marketing Course | Course = Quran Shikkha | Course = Professional Excel Masterclass
+
+01712538223:Mongla321@ | Username = 01712538223 | Mobile = 01712538223 | Role = Student | Name = Faruk Ahsan | CoursesCount = 1 | Course = Chinese Language Course
+
+01711119969:nn123456 | Username = 01711119969 | Mobile = 01711119969 | Role = Student | Name = Afrose Nahid | CoursesCount = 2 | Course = Corporate English | Course = Advance English-Speaking Course
+
+01726767089:S97278597@ | Username = 01726767089 | Mobile = 01726767089 | Role = Student | Name = Md. Safin Ahmed | CoursesCount = 2 | Course = A Complete Guide to Create necessary graphic without adobe Photoshop and illustrator | Course = Photography
+
+01714788222:protik3881 | Username = 01714788222 | Mobile = 01714788222 | Role = Student | Name = Protik Biswas | CoursesCount = 3 | Course = Fundamentals of Spoken English | Course = Fundamentals of IELTS | Course = IELTS General Preparation - Full Course
+
+01670177690:Fahmi116 | Username = 01670177690 | Mobile = 01670177690 | Role = Student | Name = Md. Rahat Khan Redoy | CoursesCount = 1 | Course = A Complete Guide to Create necessary graphic without adobe Photoshop and illustrator
+
+01718607623:Mizan303* | Username = 01718607623 | Mobile = 01718607623 | Role = Student | Name = Md. Mizanur Rahman | CoursesCount = 2 | Course = Kids Spoken English course | Course = Professional Excel Masterclass
+
+01628816708:Poralekha2020 | Username = 01628816708 | Mobile = 01628816708 | Role = Student | Name = অর্ণব বড়ুয়া | CoursesCount = 1 | Course = Ukulele Basic
+
+01916712704:01916712704 | Username = 01916712704 | Mobile = 01916712704 | Role = Student | Name = Md. Sadikur Rahman | CoursesCount = 2 | Course = Professional Excel Masterclass | Course = Sales Training
+
+01621384768:Samir4768 | Username = 01621384768 | Mobile = 01621384768 | Role = Student | Name = Samir Islam | CoursesCount = 1 | Course = Freelance Graphics Designing Course
+
+01786511603:7933passme | Username = 01786511603 | Mobile = 01786511603 | Role = Student | Name = Shah Jawadul Islam Alvi | CoursesCount = 1 | Course = Photography
+
+01610063566:FM231222 | Username = 01610063566 | Mobile = 01610063566 | Role = Student | Name = Premium | CoursesCount = 9 | Course = Basic English-Speaking Course | Course = Advance English-Speaking Course | Course = SEO Masterclass | Course = Be a Pro Virtual Assistant | Course = Fundamentals of Spoken English | Course = Full Stack Web Development Roadmap | Course = Full Stack Shop using Node JS, Express JS, and MongoDB with Deployment | Course = Data Entry Advanced Course | Course = Data Entry Basic Course
+
+01823618211:0846250r | Username = 01823618211 | Mobile = 01823618211 | Role = Student | Name = MR Riyad Hasan | CoursesCount = 9 | Course = Data Entry Workshop | Course = Business Card & Banner Design | Course = Graphics Design A to Z | Course = Data Entry Basic Course | Course = Data Entry Advanced Course | Course = Basic Computer Essential (Part 3): Microsoft PowerPoint, Internet & Google Docs | Course = Basic Computer Essential (Part 2): MS Excel | Course = Basic Computer Essential (Part 1): MS Word | Course = Online Class Techniques
+
+01781744861:a1r2i3f4u5l6 | Username = 01781744861 | Mobile = 01781744861 | Role = Student | Name = Ariful Hasan | CoursesCount = 1 | Course = IELTS Academic Preparation - Full Course
+
+01912839428:10Ed@Painting2010 | Username = 01912839428 | Mobile = 01912839428 | Role = Student | Name = Mohammad Habibulla | CoursesCount = 8 | Course = Basic Course of Game Development without Coding | Course = Video Editing Fundamentals | Course = 3D Animation Basic | Course = Radio/TV Presentation | Course = YouTube Content Creator Course | Course = Motion Graphics | Course = Video Editing | Course = Basic Graphics Design Course
+
+01780832302:shatta14 | Username = 01780832302 | Mobile = 01780832302 | Role = Student | Name = Tamanna Mannan | CoursesCount = 1 | Course = Banner Design with Canva
+
+01758567377:hsc106929 | Username = 01758567377 | Mobile = 01758567377 | Role = Student | Name = MD AKIB HOSEN KHAN | CoursesCount = 1 | Course = How to Import from China and Start a Business
+
+01971000273:123456 | Username = 01971000273 | Mobile = 01971000273 | Role = Student | Name = আশরাফুল হক সাব্বির | CoursesCount = 3 | Course = DevOps 102: CCNA for IT Professionals | Course = Affiliate Marketing for Beginners with income Proof | Course = Advanced Mobile Phone Servicing - Software
+
+01644972067:ami1rahat | Username = 01644972067 | Mobile = 01644972067 | Role = Student | Name = Hasan Saifullah Rahat | CoursesCount = 9 | Course = Fundamentals of Spoken English | Course = Full Stack Web Development Roadmap | Course = Banner Design with Canva | Course = Audio Enhancement & Noise Removal | Course = Creative Content Design Techniques | Course = Fundamentals of IELTS | Course = A Complete Guide to Create necessary graphic without adobe Photoshop and illustrator | Course = Online Class Techniques | Course = Cybersecurity & Ethical Hacking
+
+01310135113:Hasan123Ali456 | Username = 01310135113 | Mobile = 01310135113 | Role = Student | Name = Hasan Ali | CoursesCount = 1 | Course = A Complete Guide to Create necessary graphic without adobe Photoshop and illustrator
+
+01733259848:$Shuvo33$ | Username = 01733259848 | Mobile = 01733259848 | Role = Student | Name = Md. Mahadi Hasan Shuvo | CoursesCount = 1 | Course = Audio Enhancement & Noise Removal
+
+01733431430:prothomalo | Username = 01733431430 | Mobile = 01733431430 | Role = Student | Name = Anup Kumar Mitra | CoursesCount = 1 | Course = Professional CV Writing
+
+01716323729:pz888888 | Username = 01716323729 | Mobile = 01716323729 | Role = Student | Name = Md yeahia khaled | CoursesCount = 9 | Course = A Complete Guide to Create necessary graphic without adobe Photoshop and illustrator | Course = Productivity Improvement for Bottom level Workers | Course = Professional Skills for Job Hacks | Course = Fitness Yoga | Course = Advanced Persuasion and Negotiation Skills | Course = Leadership Skills | Course = Corporate English | Course = Quran Shikkha | Course = Basic Digital Marketing Course
+
+01718996156:Mondallorn56 | Username = 01718996156 | Mobile = 01718996156 | Role = Student | Name = Md. Amirul Islam Mondal | CoursesCount = 1 | Course = Data Entry Basic Course
+
+01515291615:Anto1111 | Username = 01515291615 | Mobile = 01515291615 | Role = Student | Name = A. Z. M. Didarul Islam | CoursesCount = 5 | Course = Audio Enhancement & Noise Removal | Course = Creative Content Design Techniques | Course = Fundamentals of IELTS | Course = A Complete Guide to Create necessary graphic without adobe Photoshop and illustrator | Course = Online Class Techniques
+
+01823862444:mdarfatan555 | Username = 01823862444 | Mobile = 01823862444 | Role = Student | Name = Mohammad Alauddin | CoursesCount = 2 | Course = A Complete Guide to Create necessary graphic without adobe Photoshop and illustrator | Course = Basic Course of Game Development without Coding
+
+01723561969:tanveer5678950 | Username = 01723561969 | Mobile = 01723561969 | Role = Student | Name = broccoli flower | CoursesCount = 1 | Course = IELTS General Preparation - Full Course
+
+01612100616:933@Arif | Username = 01612100616 | Mobile = 01612100616 | Role = Student | Name = Tasnimul Hasan | CoursesCount = 2 | Course = Fundamentals of Spoken English | Course = Time Management
+
+01620160721:ovijit216347 | Username = 01620160721 | Mobile = 01620160721 | Role = Student | Name = Ovijit Karmoker | CoursesCount = 1 | Course = Corporate English
+
+01730601545:Faysal014050@@ | Username = 01730601545 | Mobile = 01730601545 | Role = Student | Name = Faysal Hossain | CoursesCount = 1 | Course = Arabic Spoken Basic
+
+01841141260:01781180811joy | Username = 01841141260 | Mobile = 01841141260 | Role = Student | Name = Arnob Roy | CoursesCount = 1 | Course = Web Design
+
+01715167965:BINTU.2021 | Username = 01715167965 | Mobile = 01715167965 | Role = Student | Name = Bintu Datta | CoursesCount = 4 | Course = Advanced Graphics Design Course | Course = Graphics Design A to Z | Course = Advanced Digital Marketing Course | Course = Basic Graphics Design Course
+
+01952277321:msifejtt | Username = 01952277321 | Mobile = 01952277321 | Role = Student | Name = Md. Shahidul Islam | CoursesCount = 1 | Course = Advance English-Speaking Course
+
+01304596207:1020304050k# | Username = 01304596207 | Mobile = 01304596207 | Role = Student | Name = deen kontho | CoursesCount = 1 | Course = Basic Graphics Design Course
+
+01989330499:1234567890 | Username = 01989330499 | Mobile = 01989330499 | Role = Student | Name = MD Sweet Hasan Rajib | CoursesCount = 1 | Course = SEO Friendly Content Writing Masterclass
+
+01739695899:13861710 | Username = 01739695899 | Mobile = 01739695899 | Role = Student | Name = Riyazul Islam | CoursesCount = 2 | Course = Basic Digital Marketing Course | Course = A Complete Guide to Create necessary graphic without adobe Photoshop and illustrator
+
+01304574555:Qa9R2^OkcJLyQ#6x$w&7Rc!w | Username = 01304574555 | Mobile = 01304574555 | Role = Student | Name = Sakib R. Rehman | CoursesCount = 1 | Course = SEO Friendly Content Writing Masterclass
+
+01841314523:Amarbirthday02june | Username = 01841314523 | Mobile = 01841314523 | Role = Student | Name = SHAIKH ASHRAFUR RAHAMAN | CoursesCount = 7 | Course = Fundamentals of Spoken English | Course = Online Class Techniques | Course = Fundamentals of IELTS | Course = Creative Content Design Techniques | Course = Audio Enhancement & Noise Removal | Course = Banner Design with Canva | Course = A Complete Guide to Create necessary graphic without adobe Photoshop and illustrator
+
+01912211832:Tamimfart | Username = 01912211832 | Mobile = 01912211832 | Role = Student | Name = Tamim Tahsin | CoursesCount = 1 | Course = Corporate English
+
+01772186833:01772186ss | Username = 01772186833 | Mobile = 01772186833 | Role = Student | Name = Mohammad Sulyiman | CoursesCount = 1 | Course = Freelance Graphics Designing Course
+
+01948694708:Taposh | Username = 01948694708 | Mobile = 01948694708 | Role = Student | Name = Taposh Kar | CoursesCount = 4 | Course = Audio Enhancement & Noise Removal | Course = A Complete Guide to Create necessary graphic without adobe Photoshop and illustrator | Course = Advanced Digital Marketing Course | Course = Basic Digital Marketing Course
+
+01722782259:ashlvu3434 | Username = 01722782259 | Mobile = 01722782259 | Role = Student | Name = Romel | CoursesCount = 1 | Course = Basic Graphics Design Course
+
+01303253799:touhid123@ | Username = 01303253799 | Mobile = 01303253799 | Role = Student | Name = touhid | CoursesCount = 2 | Course = A Complete Guide to Create necessary graphic without adobe Photoshop and illustrator | Course = Basic Digital Marketing Course
+
+01771071169:bishalbhadra06 | Username = 01771071169 | Mobile = 01771071169 | Role = Student | Name = NA | CoursesCount = 2 | Course = Workshop on How to Import from China & Start your Business | Course = How to Import from China and Start a Business
+
+01816156371:Ghoorilearningatmohotarim | Username = 01816156371 | Mobile = 01816156371 | Role = Student | Name = JAHIDUL ISLAM AZAD | CoursesCount = 9 | Course = Audio Enhancement & Noise Removal | Course = A Complete Guide to Create necessary graphic without adobe Photoshop and illustrator | Course = Professional CV Writing | Course = Sales Training | Course = Photography | Course = Basic Graphics Design Course | Course = Web Design | Course = Basic Digital Marketing Course | Course = Corporate English
+
+01912520585:Mahfuz15103046$ | Username = 01912520585 | Mobile = 01912520585 | Role = Student | Name = MAHFUZUR RAHMAN | CoursesCount = 1 | Course = Interview Hacks
+
+01742250909:rollno01911 | Username = 01742250909 | Mobile = 01742250909 | Role = Student | Name = Md. Faridur Rahman | CoursesCount = 4 | Course = SEO Masterclass | Course = Advanced Digital Marketing Course | Course = Basic Digital Marketing Course | Course = Video Editing
+
+01823402507:kuttarbaccha | Username = 01823402507 | Mobile = 01823402507 | Role = Student | Name = মোঃসালাউদ্দীন রেজা | CoursesCount = 1 | Course = Web Design
+
+01755800161:adil2002 | Username = 01755800161 | Mobile = 01755800161 | Role = Student | Name = Jahidul Islam Azad | CoursesCount = 1 | Course = Mobile Photography
+
+01773999517:imtheboss#911 | Username = 01773999517 | Mobile = 01773999517 | Role = Student | Name = MD. SAHADAT HOSSAIN | CoursesCount = 1 | Course = Quran Shikkha
+
+01732696715:01732696715 | Username = 01732696715 | Mobile = 01732696715 | Role = Student | Name = NUSRAT ZAHAN PANNI | CoursesCount = 2 | Course = Fundamentals of IELTS | Course = Advance English-Speaking Course
+       `;
+
+        let allStudents = [];
+
+        function initApp() {
+            parseData();
+            renderCards(allStudents);
+            setupSearch();
+        }
+
+        // Custom Parser for Ghoori Learning format
+        function parseData() {
+            const lines = rawData.trim().split('\n');
+            const uniqueMap = new Map();
+
+            lines.forEach(line => {
+                const trimmedLine = line.trim();
+                if (!trimmedLine) return; // Skip empty lines
+
+                const parts = trimmedLine.split(' | ');
+                
+                // Extract credentials from the first part
+                const firstColonIdx = parts[0].indexOf(':');
+                if (firstColonIdx === -1) return; // Invalid format
+                
+                const phone = parts[0].substring(0, firstColonIdx).trim();
+                const password = parts[0].substring(firstColonIdx + 1).trim();
+
+                let name = 'Unknown';
+                let courses = [];
+
+                // Extract Name and Courses from the remaining parts
+                for (let i = 1; i < parts.length; i++) {
+                    const item = parts[i].trim();
+                    if (item.startsWith('Name = ')) {
+                        name = item.substring(7).trim(); // Remove "Name = "
+                    } else if (item.startsWith('Course = ')) {
+                        courses.push(item.substring(9).trim()); // Remove "Course = "
+                    }
+                }
+
+                // Handling duplicates
+                if (!uniqueMap.has(phone)) {
+                    uniqueMap.set(phone, {
+                        phone: phone,
+                        password: password,
+                        name: name,
+                        courses: [...new Set(courses)] // Remove duplicate courses if any
+                    });
+                }
+            });
+
+            allStudents = Array.from(uniqueMap.values());
+            document.getElementById('totalCount').innerText = `Total: ${allStudents.length}`;
+        }
+
+        function renderCards(students) {
+            const grid = document.getElementById('studentsGrid');
+            const noResults = document.getElementById('noResults');
+            
+            if (students.length === 0) {
+                grid.innerHTML = '';
+                noResults.classList.remove('hidden');
+                return;
+            } else {
+                noResults.classList.add('hidden');
+            }
+
+            let html = '';
+            students.forEach(student => {
+                let courseBadges = student.courses.map(course => {
+                    return `<span class="inline-flex items-center px-2 py-1 rounded text-[11px] font-semibold border ${getBadgeStyle(course)} max-w-full" title="${course}">
+                        <i class="fa-solid fa-play-circle mr-1.5 opacity-70"></i> 
+                        <span class="truncate block whitespace-normal break-words">${course}</span>
+                    </span>`;
+                }).join('');
+
+                html += `
+                <div class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden flex flex-col border border-gray-200">
+                    <!-- Card Header -->
+                    <div class="p-5 border-b border-gray-100 bg-gray-50 flex justify-between items-start">
+                        <div class="overflow-hidden w-full">
+                            <h2 class="text-lg font-bold text-gray-900 truncate" title="${student.name}">${student.name}</h2>
+                            <div class="text-sm font-mono text-gray-600 mt-1 flex items-center gap-2">
+                                <span class="bg-teal-100 text-teal-800 px-2 py-0.5 rounded text-xs font-bold"><i class="fa-solid fa-phone"></i> ${student.phone}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Card Body (Courses) -->
+                    <div class="p-5 flex-grow bg-white">
+                        <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center justify-between">
+                            <span>Enrolled Courses</span>
+                            <span class="bg-teal-50 border border-teal-100 text-teal-700 px-2 py-0.5 rounded-full">${student.courses.length}</span>
+                        </div>
+                        <div class="flex flex-col gap-2 max-h-40 overflow-y-auto custom-scrollbar pr-2">
+                            ${courseBadges}
+                        </div>
+                    </div>
+
+                    <!-- Card Footer -->
+                    <div class="p-4 bg-gray-50 border-t border-gray-100">
+                        <button onclick="copyFormattedDetails('${student.phone}', '${student.password}', '${student.name}')" 
+                                class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm">
+                            <i class="fa-solid fa-copy"></i> Copy Details
+                        </button>
+                    </div>
+                </div>`;
+            });
+
+            grid.innerHTML = html;
+        }
+
+        function setupSearch() {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase().trim();
+                const filtered = allStudents.filter(s => 
+                    s.name.toLowerCase().includes(term) ||
+                    s.phone.includes(term) ||
+                    s.courses.some(c => c.toLowerCase().includes(term))
+                );
+                renderCards(filtered);
+            });
+        }
+
+        // Color coding for different Ghoori course categories
+        function getBadgeStyle(courseName) {
+            let name = courseName.toLowerCase();
+            
+            if (name.includes('photo') || name.includes('video')) {
+                return 'bg-blue-50 text-blue-700 border-blue-200';
+            } else if (name.includes('seo') || name.includes('marketing') || name.includes('content')) {
+                return 'bg-green-50 text-green-700 border-green-200';
+            } else if (name.includes('design') || name.includes('graphic') || name.includes('ui/ux')) {
+                return 'bg-purple-50 text-purple-700 border-purple-200';
+            } else if (name.includes('data entry') || name.includes('excel') || name.includes('office')) {
+                return 'bg-orange-50 text-orange-700 border-orange-200';
+            }
+            return 'bg-slate-50 text-slate-700 border-slate-200'; // Default
+        }
+
+        // Formatting text for WhatsApp/Messenger sharing
+        function copyFormattedDetails(phone, password, name) {
+            const textToCopy = 
+` Ghoori Learning Login
+ Name: ${name}
+ Mobile: ${phone}
+ Password: ${password}`;
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                showToast();
+            }).catch(err => {
+                console.error('Could not copy text: ', err);
+                alert("Failed to copy text. Please try manually.");
+            });
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('opacity-0', 'translate-y-2');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-2');
+            }, 2500);
+        }
+
+        // Run application
+        window.onload = initApp;
+    </script>
+</body>
+</html>
