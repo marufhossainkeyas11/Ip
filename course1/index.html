@@ -321,7 +321,8 @@
             let html = '';
             studentsToShow.forEach(student => {
                 let courseHTML = student.courses.map(course => {
-                    return `<div class="w-full text-left px-3 py-2 rounded-lg border text-xs font-semibold whitespace-normal leading-relaxed ${getBadgeStyle(course)}">
+                    let safeCourse = course.replace(/'/g, "\\'").replace(/"/g, '&quot;'); // স্পেশাল ক্যারেক্টার ফিক্স
+                    return `<div onclick="searchByCourse('${safeCourse}')" class="cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all w-full text-left px-3 py-2 rounded-lg border text-xs font-semibold whitespace-normal leading-relaxed ${getBadgeStyle(course)}">
                         <i class="fa-solid fa-play-circle mr-1.5 opacity-70"></i> ${course}
                     </div>`;
                 }).join('');
@@ -365,19 +366,25 @@
             const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
             const container = document.getElementById('pagination');
             let html = '';
-
+        
             if (totalPages <= 1) { container.innerHTML = ''; return; }
-
-            html += `<button onclick="changePage(${currentPage - 1})" class="w-10 h-10 flex items-center justify-center rounded-lg border ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white hover:bg-teal-50 text-teal-600 font-bold'}" ${currentPage === 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-left"></i></button>`;
-
-            let start = Math.max(1, currentPage - 2);
-            let end = Math.min(totalPages, currentPage + 2);
+        
+            html += `<button onclick="changePage(1)" class="w-10 h-10 flex items-center justify-center rounded-lg border ${currentPage === 1 ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-white hover:bg-teal-50 text-teal-600 font-bold'}" ${currentPage === 1 ? 'disabled' : ''} title="First Page"><i class="fa-solid fa-angles-left"></i></button>`;
+            html += `<button onclick="changePage(${currentPage - 1})" class="w-10 h-10 flex items-center justify-center rounded-lg border ${currentPage === 1 ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-white hover:bg-teal-50 text-teal-600 font-bold'}" ${currentPage === 1 ? 'disabled' : ''} title="Previous Page"><i class="fa-solid fa-chevron-left"></i></button>`;
+        
+            let start = Math.max(1, currentPage - 1);
+            let end = Math.min(totalPages, currentPage + 1);
+            
+            if (currentPage === 1) end = Math.min(3, totalPages);
+            if (currentPage === totalPages) start = Math.max(1, totalPages - 2);
+        
             for (let i = start; i <= end; i++) {
                 html += `<button onclick="changePage(${i})" class="w-10 h-10 flex items-center justify-center rounded-lg border font-bold transition-colors ${i === currentPage ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-gray-700 hover:bg-teal-50 hover:text-teal-600'}">${i}</button>`;
             }
 
-            html += `<button onclick="changePage(${currentPage + 1})" class="w-10 h-10 flex items-center justify-center rounded-lg border ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white hover:bg-teal-50 text-teal-600 font-bold'}" ${currentPage === totalPages ? 'disabled' : ''}><i class="fa-solid fa-chevron-right"></i></button>`;
-
+            html += `<button onclick="changePage(${currentPage + 1})" class="w-10 h-10 flex items-center justify-center rounded-lg border ${currentPage === totalPages ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-white hover:bg-teal-50 text-teal-600 font-bold'}" ${currentPage === totalPages ? 'disabled' : ''} title="Next Page"><i class="fa-solid fa-chevron-right"></i></button>`;
+            html += `<button onclick="changePage(${totalPages})" class="w-10 h-10 flex items-center justify-center rounded-lg border ${currentPage === totalPages ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-white hover:bg-teal-50 text-teal-600 font-bold'}" ${currentPage === totalPages ? 'disabled' : ''} title="Last Page"><i class="fa-solid fa-angles-right"></i></button>`;
+        
             container.innerHTML = html;
         }
 
@@ -400,6 +407,22 @@
             });
         }
 
+        function searchByCourse(course) {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.value = course; // সার্চ বক্সে কোর্সের নাম বসিয়ে দেবে
+            
+            const term = course.toLowerCase().trim();
+            filteredStudents = allStudents.filter(s => 
+                s.name.toLowerCase().includes(term) ||
+                s.id.includes(term) ||
+                s.courses.some(c => c.toLowerCase().includes(term))
+            );
+            
+            currentPage = 1;
+            renderPage();
+            window.scrollTo({ top: 0, behavior: 'smooth' }); // স্ক্রল করে উপরে নিয়ে যাবে
+        }
+        
         function getBadgeStyle(courseName) {
             let name = courseName.toLowerCase();
             if (name.includes('photo') || name.includes('video')) return 'bg-blue-50 text-blue-700 border-blue-200';
@@ -433,12 +456,13 @@
                 container.innerHTML = '<p class="text-center text-gray-500 py-4">No courses available.</p>';
                 return;
             }
-            container.innerHTML = allUniqueCoursesList.map((c, i) => 
-                `<li class="bg-white border border-gray-200 p-3 rounded-lg text-sm font-semibold text-gray-700 shadow-sm flex items-center gap-3">
+            container.innerHTML = allUniqueCoursesList.map((c, i) => {
+                let safeCourse = c.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                return `<li onclick="searchByCourse('${safeCourse}'); closeModal('courseModal')" class="cursor-pointer hover:bg-teal-50 hover:text-teal-700 transition-colors bg-white border border-gray-200 p-3 rounded-lg text-sm font-semibold text-gray-700 shadow-sm flex items-center gap-3">
                     <span class="w-6 h-6 rounded bg-teal-100 text-teal-600 flex items-center justify-center text-xs">${i+1}</span>
                     ${c}
-                </li>`
-            ).join('');
+                </li>`;
+            }).join('');
         }
 
         // Copy Actions
