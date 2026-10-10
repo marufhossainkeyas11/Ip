@@ -8,42 +8,58 @@
     <script async src="https://marufhossainkeyas11.github.io/kslive/js/umami.js" data-website-id="7f546f13-8a72-485b-87d2-5f6dee6fb1d9"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Custom smooth scrollbar for course lists */
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
-        #toast { transition: opacity 0.3s, transform 0.3s; z-index: 1000; }
+        #toast { transition: opacity 0.3s, transform 0.3s; z-index: 9999; }
+        .modal-enter { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans antialiased min-h-screen">
+<body class="bg-gray-100 text-gray-800 font-sans antialiased min-h-screen flex flex-col relative">
 
-    <div class="max-w-7xl mx-auto p-4 md:p-8">
-        <!-- Header Section -->
-        <div class="bg-white rounded-2xl shadow-sm p-6 mb-8 border border-gray-200">
-            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+    <!-- Scroll Progress Bar -->
+    <div id="scrollProgress" class="fixed top-0 left-0 h-1.5 bg-indigo-600 z-50 transition-all duration-150" style="width: 0%;"></div>
+
+    <div class="max-w-7xl mx-auto p-4 md:p-8 pt-6 flex-grow w-full">
+        <!-- Brand / Header Section -->
+        <div class="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-gray-200">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900 flex items-center gap-2">
                         <i class="fa-solid fa-graduation-cap text-indigo-600"></i> Udvash-Unmesh
                     </h1>
-                    <p class="text-gray-500 text-sm mt-1">Student details & enrolled courses directory</p>
+                    <div class="text-sm mt-2 flex flex-wrap gap-3">
+                        <a href="https://udvash.com" target="_blank" class="text-indigo-600 hover:text-indigo-800 font-semibold bg-indigo-50 px-3 py-1 rounded-full transition">
+                            <i class="fa-solid fa-globe"></i> udvash.com
+                        </a>
+                        <a href="https://play.google.com/store/apps/details?id=com.udvashunmesh.online" target="_blank" class="text-indigo-600 hover:text-indigo-800 font-semibold bg-indigo-50 px-3 py-1 rounded-full transition">
+                            <i class="fa-brands fa-google-play"></i> Mobile App
+                        </a>
+                    </div>
                 </div>
                 
-                <div class="bg-indigo-50 border border-indigo-100 text-indigo-800 px-4 py-2 rounded-xl font-bold flex items-center gap-2">
-                    <i class="fa-solid fa-users"></i>
-                    <span id="totalCount">Total: 0</span>
+                <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                    <div class="bg-gray-50 border border-gray-200 text-gray-800 px-4 py-2 rounded-xl font-bold flex items-center justify-between gap-3 text-sm">
+                        <span><i class="fa-solid fa-users text-indigo-500"></i> Accounts</span>
+                        <span id="totalCount" class="bg-white px-2 py-0.5 rounded-md border">0</span>
+                    </div>
+                    <button onclick="openCourseModal()" class="bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-800 px-4 py-2 rounded-xl font-bold flex items-center justify-between gap-3 text-sm transition">
+                        <span><i class="fa-solid fa-book-open"></i> View Courses</span>
+                        <span id="uniqueCourseCount" class="bg-white px-2 py-0.5 rounded-md border border-indigo-100">0</span>
+                    </button>
                 </div>
             </div>
 
             <!-- Search Bar -->
             <div class="mt-6 relative">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <i class="fa-solid fa-search text-gray-400"></i>
                 </div>
                 <input type="text" id="searchInput" 
-                    class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all" 
-                    placeholder="Search by student name, reg no, or course name...">
+                    class="block w-full pl-11 pr-4 py-3.5 border border-gray-300 rounded-xl leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 sm:text-sm transition-all" 
+                    placeholder="Search by student name, ID, or course name...">
             </div>
         </div>
 
@@ -51,6 +67,9 @@
         <div id="studentsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <!-- Cards will be injected here via JavaScript -->
         </div>
+
+        <!-- Pagination Controls -->
+        <div id="pagination" class="mt-8 flex flex-wrap justify-center items-center gap-2"></div>
 
         <!-- No Results Found Message -->
         <div id="noResults" class="hidden text-center py-12">
@@ -60,10 +79,82 @@
         </div>
     </div>
 
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="text-sm text-gray-500 font-medium">
+                © 2026 Student Directory System. All rights reserved.
+            </div>
+            <div class="flex items-center gap-2 text-sm font-bold text-gray-700">
+                <span>Developed by <span class="text-indigo-600">@marufhossainkeyas</span></span>
+                <div class="flex gap-2 ml-2">
+                    <a href="#" class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition"><i class="fa-brands fa-facebook-f"></i></a>
+                    <a href="#" class="w-8 h-8 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center hover:bg-pink-600 hover:text-white transition"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center hover:bg-green-600 hover:text-white transition"><i class="fa-brands fa-whatsapp"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Details Modal -->
+    <div id="studentModal" class="fixed inset-0 z-[100] hidden bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md modal-enter overflow-hidden">
+            <div class="bg-indigo-600 p-4 flex justify-between items-center text-white">
+                <h3 class="font-bold text-lg"><i class="fa-solid fa-user-circle mr-2"></i> Details</h3>
+                <button onclick="closeModal('studentModal')" class="text-white hover:text-indigo-200 transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-5 space-y-3">
+                <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <div class="overflow-hidden pr-2">
+                        <p class="text-[10px] text-gray-500 font-bold uppercase mb-0.5">Name</p>
+                        <p id="modalName" class="font-bold text-gray-900 truncate"></p>
+                    </div>
+                    <button onclick="copyText('modalName', 'Name')" class="text-indigo-600 hover:bg-indigo-100 p-2 rounded-md transition"><i class="fa-regular fa-copy"></i></button>
+                </div>
+                <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <div>
+                        <p class="text-[10px] text-gray-500 font-bold uppercase mb-0.5">Reg No / ID</p>
+                        <p id="modalId" class="font-mono font-bold text-gray-900"></p>
+                    </div>
+                    <button onclick="copyText('modalId', 'ID')" class="text-indigo-600 hover:bg-indigo-100 p-2 rounded-md transition"><i class="fa-regular fa-copy"></i></button>
+                </div>
+                <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <div>
+                        <p class="text-[10px] text-gray-500 font-bold uppercase mb-0.5">Password</p>
+                        <p id="modalPass" class="font-mono font-bold text-gray-900"></p>
+                    </div>
+                    <button onclick="copyText('modalPass', 'Password')" class="text-indigo-600 hover:bg-indigo-100 p-2 rounded-md transition"><i class="fa-regular fa-copy"></i></button>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 border-t flex gap-3">
+                <button onclick="closeModal('studentModal')" class="flex-1 border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold py-2.5 rounded-xl transition">Close</button>
+                <button id="modalCopyAllBtn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition"><i class="fa-solid fa-copy"></i> Copy All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Available Courses Modal -->
+    <div id="courseModal" class="fixed inset-0 z-[100] hidden bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg modal-enter overflow-hidden flex flex-col max-h-[80vh]">
+            <div class="bg-indigo-600 p-4 flex justify-between items-center text-white">
+                <h3 class="font-bold text-lg"><i class="fa-solid fa-layer-group mr-2"></i> All Available Courses</h3>
+                <button onclick="closeModal('courseModal')" class="text-white hover:text-indigo-200 transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-5 overflow-y-auto custom-scrollbar flex-grow bg-gray-50">
+                <ul id="courseListContainer" class="space-y-2">
+                    <!-- Categories/Courses injected here -->
+                </ul>
+            </div>
+            <div class="p-4 bg-white border-t">
+                <button onclick="closeModal('courseModal')" class="w-full border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold py-2.5 rounded-xl transition">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl opacity-0 pointer-events-none flex items-center gap-3">
+    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-5 py-3 rounded-full shadow-2xl opacity-0 pointer-events-none flex items-center gap-3">
         <i class="fa-solid fa-check-circle text-green-400"></i>
-        <span class="font-medium tracking-wide">Login details copied successfully!</span>
+        <span id="toastMessage" class="font-medium tracking-wide">Copied!</span>
     </div>
 
     <!-- Script Section -->
@@ -354,16 +445,29 @@
         `;
 
         let allStudents = [];
+        let filteredStudents = [];
+        let allUniqueCoursesList = [];
+        let currentPage = 1;
+        const itemsPerPage = 20;
+
+        window.addEventListener("scroll", () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            document.getElementById("scrollProgress").style.width = (height > 0 ? (winScroll / height) * 100 : 0) + "%";
+        });
 
         function initApp() {
             parseData();
-            renderCards(allStudents);
+            filteredStudents = [...allStudents];
+            renderPage();
             setupSearch();
+            renderCourseModalList();
         }
 
         function parseData() {
             const lines = rawData.trim().split('\n');
             const uniqueMap = new Map();
+            const courseSet = new Set();
             const regex = /^(\d+):([^\|]+)\s*\|\s*Name\s*=\s*(.*?)\s*\|\s*My Courses\s*=\s*\[(.*?)\]/;
 
             lines.forEach(line => {
@@ -371,11 +475,9 @@
                 if (match) {
                     const id = match[1];
                     if (!uniqueMap.has(id)) {
-                        
-                        // Clean up messy HTML entities in courses
                         let rawCourses = match[4].replace(/&#x27;/g, "'").replace(/&amp;/g, "&");
-                        // Optional: Remove duplicate course names for a single student if any
                         let courseArray = [...new Set(rawCourses.split(',').map(c => c.trim()))];
+                        courseArray.forEach(c => courseSet.add(c));
 
                         uniqueMap.set(id, {
                             id: id,
@@ -387,120 +489,170 @@
                 }
             });
             allStudents = Array.from(uniqueMap.values());
-            document.getElementById('totalCount').innerText = `Total: ${allStudents.length}`;
+            allUniqueCoursesList = Array.from(courseSet).sort();
+            
+            document.getElementById('totalCount').innerText = allStudents.length;
+            document.getElementById('uniqueCourseCount').innerText = allUniqueCoursesList.length;
         }
 
-        function renderCards(students) {
+        function renderPage() {
             const grid = document.getElementById('studentsGrid');
             const noResults = document.getElementById('noResults');
             
-            if (students.length === 0) {
+            if (filteredStudents.length === 0) {
                 grid.innerHTML = '';
+                document.getElementById('pagination').innerHTML = '';
                 noResults.classList.remove('hidden');
                 return;
             } else {
                 noResults.classList.add('hidden');
             }
 
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const studentsToShow = filteredStudents.slice(startIndex, startIndex + itemsPerPage);
+
             let html = '';
-            students.forEach(student => {
-                let courseBadges = student.courses.map(course => {
-                    return `<span class="inline-flex items-center px-2 py-1 rounded text-[11px] font-semibold border ${getBadgeStyle(course)} truncate max-w-full" title="${course}">
-                        <i class="fa-solid fa-book-open mr-1.5 opacity-70"></i> ${course}
-                    </span>`;
+            studentsToShow.forEach(student => {
+                let courseHTML = student.courses.map(course => {
+                    return `<div class="w-full text-left px-3 py-2 rounded-lg border text-xs font-semibold truncate ${getBadgeStyle(course)}" title="${course}">
+                        <i class="fa-solid fa-book mr-1.5 opacity-70"></i> ${course}
+                    </div>`;
                 }).join('');
 
                 html += `
-                <div class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden flex flex-col border border-gray-200">
-                    <!-- Card Header -->
-                    <div class="p-5 border-b border-gray-100 bg-gray-50 flex justify-between items-start">
-                        <div class="overflow-hidden">
-                            <h2 class="text-lg font-bold text-gray-900 truncate" title="${student.name}">${student.name}</h2>
-                            <div class="text-sm font-mono text-gray-600 mt-1 flex items-center gap-2">
-                                <span class="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs"><i class="fa-solid fa-id-badge"></i> ${student.id}</span>
-                            </div>
+                <div class="bg-white rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] overflow-hidden flex flex-col border border-gray-200">
+                    <div class="p-5 border-b border-gray-100">
+                        <h2 class="text-lg font-bold text-gray-900 truncate uppercase">${student.name}</h2>
+                        <div class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-md text-xs font-bold mt-2">
+                            <i class="fa-solid fa-id-card"></i> ${student.id}
                         </div>
                     </div>
                     
-                    <!-- Card Body (Courses) -->
                     <div class="p-5 flex-grow bg-white">
-                        <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center justify-between">
-                            <span>Enrolled Courses</span>
-                            <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">${student.courses.length}</span>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Enrolled Courses</span>
+                            <span class="w-6 h-6 flex items-center justify-center rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold">${student.courses.length}</span>
                         </div>
-                        <div class="flex flex-col gap-2 max-h-36 overflow-y-auto custom-scrollbar pr-2">
-                            ${courseBadges}
+                        <div class="flex flex-col gap-2 max-h-44 overflow-y-auto custom-scrollbar pr-2">
+                            ${courseHTML}
                         </div>
                     </div>
 
-                    <!-- Card Footer -->
-                    <div class="p-4 bg-gray-50 border-t border-gray-100">
-                        <button onclick="copyFormattedDetails('${student.id}', '${student.password}', '${student.name}')" 
-                                class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm">
-                            <i class="fa-solid fa-copy"></i> Copy Details
+                    <div class="p-4 border-t border-gray-100 flex gap-3">
+                        <button onclick="openStudentModal('${student.id}')" class="flex-1 bg-white border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 font-bold py-2 rounded-xl transition flex justify-center items-center gap-2">
+                            <i class="fa-solid fa-eye"></i> Details
+                        </button>
+                        <button onclick="copyFormattedDetails('${student.id}')" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl transition flex justify-center items-center gap-2">
+                            <i class="fa-solid fa-copy"></i> Copy
                         </button>
                     </div>
                 </div>`;
             });
 
             grid.innerHTML = html;
+            renderPagination();
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+            const container = document.getElementById('pagination');
+            let html = '';
+
+            if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+            html += `<button onclick="changePage(${currentPage - 1})" class="w-10 h-10 flex items-center justify-center rounded-lg border ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white hover:bg-indigo-50 text-indigo-600 font-bold'}" ${currentPage === 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-left"></i></button>`;
+
+            let start = Math.max(1, currentPage - 2);
+            let end = Math.min(totalPages, currentPage + 2);
+            for (let i = start; i <= end; i++) {
+                html += `<button onclick="changePage(${i})" class="w-10 h-10 flex items-center justify-center rounded-lg border font-bold transition-colors ${i === currentPage ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 hover:bg-indigo-50 hover:text-indigo-600'}">${i}</button>`;
+            }
+
+            html += `<button onclick="changePage(${currentPage + 1})" class="w-10 h-10 flex items-center justify-center rounded-lg border ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white hover:bg-indigo-50 text-indigo-600 font-bold'}" ${currentPage === totalPages ? 'disabled' : ''}><i class="fa-solid fa-chevron-right"></i></button>`;
+
+            container.innerHTML = html;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderPage();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function setupSearch() {
-            const searchInput = document.getElementById('searchInput');
-            searchInput.addEventListener('input', (e) => {
+            document.getElementById('searchInput').addEventListener('input', (e) => {
                 const term = e.target.value.toLowerCase().trim();
-                const filtered = allStudents.filter(s => 
+                filteredStudents = allStudents.filter(s => 
                     s.name.toLowerCase().includes(term) ||
                     s.id.includes(term) ||
                     s.courses.some(c => c.toLowerCase().includes(term))
                 );
-                renderCards(filtered);
+                currentPage = 1;
+                renderPage();
             });
         }
 
-        // Color coding for different types of courses
         function getBadgeStyle(courseName) {
             let name = courseName.toLowerCase();
-            if (name.includes('engineering') || name.includes('ict')) {
-                return 'bg-blue-50 text-blue-700 border-blue-200';
-            } else if (name.includes('medical') || name.includes('dental') || name.includes('biology')) {
-                return 'bg-green-50 text-green-700 border-green-200';
-            } else if (name.includes('varsity') || name.includes('du') || name.includes('guccho')) {
-                return 'bg-purple-50 text-purple-700 border-purple-200';
-            } else if (name.includes('bcs')) {
-                return 'bg-red-50 text-red-700 border-red-200';
-            }
+            if (name.includes('engineering') || name.includes('ict')) return 'bg-blue-50 text-blue-700 border-blue-200';
+            if (name.includes('medical') || name.includes('dental') || name.includes('biology')) return 'bg-green-50 text-green-700 border-green-200';
+            if (name.includes('varsity') || name.includes('du') || name.includes('guccho')) return 'bg-purple-50 text-purple-700 border-purple-200';
+            if (name.includes('bcs')) return 'bg-red-50 text-red-700 border-red-200';
             return 'bg-amber-50 text-amber-700 border-amber-200';
         }
 
-        // Formatting text for WhatsApp/Messenger sharing
-        function copyFormattedDetails(id, password, name) {
-            const textToCopy = `
- Udvash-Unmesh Login
- Name: ${name}
- Reg No: ${id}
- Password: ${password}`;
-
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                showToast();
-            }).catch(err => {
-                console.error('Could not copy text: ', err);
-                alert("Failed to copy text. Please try manually.");
-            });
+        // Modals
+        function openStudentModal(id) {
+            const student = allStudents.find(s => s.id === id);
+            if(student) {
+                document.getElementById('modalName').innerText = student.name;
+                document.getElementById('modalId').innerText = student.id;
+                document.getElementById('modalPass').innerText = student.password;
+                document.getElementById('modalCopyAllBtn').onclick = () => copyFormattedDetails(student.id);
+                document.getElementById('studentModal').classList.remove('hidden');
+            }
+        }
+        function openCourseModal() {
+            document.getElementById('courseModal').classList.remove('hidden');
+        }
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
         }
 
-        function showToast() {
+        function renderCourseModalList() {
+            const container = document.getElementById('courseListContainer');
+            if (allUniqueCoursesList.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500 py-4">No courses available.</p>';
+                return;
+            }
+            container.innerHTML = allUniqueCoursesList.map((c, i) => 
+                `<li class="bg-white border border-gray-200 p-3 rounded-lg text-sm font-semibold text-gray-700 shadow-sm flex items-center gap-3">
+                    <span class="w-6 h-6 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs">${i+1}</span>
+                    ${c}
+                </li>`
+            ).join('');
+        }
+
+        // Copy Actions
+        function copyText(elementId, label) {
+            navigator.clipboard.writeText(document.getElementById(elementId).innerText).then(() => showToast(`${label} copied!`));
+        }
+        function copyFormattedDetails(id) {
+            const student = allStudents.find(s => s.id === id);
+            const textToCopy = `Udvash-Unmesh Login\nName: ${student.name}\nReg No: ${student.id}\nPassword: ${student.password}`;
+            navigator.clipboard.writeText(textToCopy).then(() => showToast('All details copied!'));
+        }
+        function showToast(msg) {
             const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').innerText = msg;
             toast.classList.remove('opacity-0', 'translate-y-2');
             toast.classList.add('opacity-100', 'translate-y-0');
             setTimeout(() => {
                 toast.classList.remove('opacity-100', 'translate-y-0');
                 toast.classList.add('opacity-0', 'translate-y-2');
-            }, 2500);
+            }, 2000);
         }
 
-        // Run application
         window.onload = initApp;
     </script>
 </body>
