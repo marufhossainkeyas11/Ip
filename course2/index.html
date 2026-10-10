@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edge Course BD Directory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script async src="https://marufhossainkeyas11.github.io/kslive/js/umami.js" data-website-id="7f546f13-8a72-485b-87d2-5f6dee6fb1d9"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #fff1f2; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #fda4af; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #fb7185; }
+        #toast { transition: opacity 0.3s, transform 0.3s; z-index: 9999; }
+        .modal-enter { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans antialiased min-h-screen flex flex-col relative">
+
+    <!-- Scroll Progress Bar -->
+    <div id="scrollProgress" class="fixed top-0 left-0 h-1.5 bg-rose-600 z-50 transition-all duration-150" style="width: 0%;"></div>
+
+    <div class="max-w-7xl mx-auto p-4 md:p-8 pt-6 flex-grow w-full">
+        <!-- Brand / Header Section -->
+        <div class="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-gray-200">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900 flex items-center gap-2">
+                        <i class="fa-solid fa-book-open-reader text-rose-600"></i> Edge Course BD
+                    </h1>
+                    <div class="text-sm mt-2 flex flex-wrap gap-3">
+                        <a href="http://edgecoursebd.com" target="_blank" class="text-rose-600 hover:text-rose-800 font-semibold bg-rose-50 px-3 py-1 rounded-full transition">
+                            <i class="fa-solid fa-globe"></i> edgecoursebd.com
+                        </a>
+                        <a href="https://play.google.com/store/apps/details?id=com.meetalif.hulkenstein" target="_blank" class="text-rose-600 hover:text-rose-800 font-semibold bg-rose-50 px-3 py-1 rounded-full transition">
+                            <i class="fa-brands fa-google-play"></i> Hulkenstein App
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                    <div class="bg-gray-50 border border-gray-200 text-gray-800 px-4 py-2 rounded-xl font-bold flex items-center justify-between gap-3 text-sm">
+                        <span><i class="fa-solid fa-users text-rose-500"></i> Accounts</span>
+                        <span id="totalCount" class="bg-white px-2 py-0.5 rounded-md border">0</span>
+                    </div>
+                    <button onclick="openCourseModal()" class="bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-800 px-4 py-2 rounded-xl font-bold flex items-center justify-between gap-3 text-sm transition">
+                        <span><i class="fa-solid fa-layer-group"></i> View Courses</span>
+                        <span id="uniqueCourseCount" class="bg-white px-2 py-0.5 rounded-md border border-rose-100">0</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="mt-6 relative">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <i class="fa-solid fa-search text-gray-400"></i>
+                </div>
+                <input type="text" id="searchInput" 
+                    class="block w-full pl-11 pr-4 py-3.5 border border-gray-300 rounded-xl leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-rose-500 sm:text-sm transition-all" 
+                    placeholder="Search by ID, password, or course name...">
+            </div>
+        </div>
+
+        <!-- Students Grid (Cards) -->
+        <div id="studentsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Cards will be injected here via JavaScript -->
+        </div>
+
+        <!-- Pagination Controls -->
+        <div id="pagination" class="mt-8 flex flex-wrap justify-center items-center gap-2"></div>
+
+        <!-- No Results Found Message -->
+        <div id="noResults" class="hidden text-center py-12">
+            <i class="fa-solid fa-folder-open text-4xl text-gray-300 mb-3"></i>
+            <h3 class="text-lg font-medium text-gray-900">No data found</h3>
+            <p class="text-gray-500">Try adjusting your search keywords.</p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="text-sm text-gray-500 font-medium">
+                © 2026 Student Directory System. All rights reserved.
+            </div>
+            <div class="flex items-center gap-2 text-sm font-bold text-gray-700">
+                <span>Developed by <span class="text-rose-600">@marufhossainkeyas</span></span>
+                <div class="flex gap-2 ml-2">
+                    <a href="https://m.facebook.com/marufhossainkeyas" class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition"><i class="fa-brands fa-facebook-f"></i></a>
+                    <a href="https://www.instagram.com/marufhossainkeyas" class="w-8 h-8 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center hover:bg-pink-600 hover:text-white transition"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://wa.me/marufhossainkeyas" class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center hover:bg-green-600 hover:text-white transition"><i class="fa-brands fa-whatsapp"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Details Modal -->
+    <div id="studentModal" class="fixed inset-0 z-[100] hidden bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md modal-enter overflow-hidden">
+            <div class="bg-rose-600 p-4 flex justify-between items-center text-white">
+                <h3 class="font-bold text-lg"><i class="fa-solid fa-user-circle mr-2"></i> Details</h3>
+                <button onclick="closeModal('studentModal')" class="text-white hover:text-rose-200 transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-5 space-y-3">
+                <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <div class="overflow-hidden pr-2">
+                        <p class="text-[10px] text-gray-500 font-bold uppercase mb-0.5">Name (Not Provided)</p>
+                        <p id="modalName" class="font-bold text-gray-900 truncate"></p>
+                    </div>
+                    <button onclick="copyText('modalName', 'Name')" class="text-rose-600 hover:bg-rose-100 p-2 rounded-md transition"><i class="fa-regular fa-copy"></i></button>
+                </div>
+                <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <div>
+                        <p class="text-[10px] text-gray-500 font-bold uppercase mb-0.5">Mobile Number / ID</p>
+                        <p id="modalId" class="font-mono font-bold text-gray-900"></p>
+                    </div>
+                    <button onclick="copyText('modalId', 'ID')" class="text-rose-600 hover:bg-rose-100 p-2 rounded-md transition"><i class="fa-regular fa-copy"></i></button>
+                </div>
+                <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <div>
+                        <p class="text-[10px] text-gray-500 font-bold uppercase mb-0.5">Password</p>
+                        <p id="modalPass" class="font-mono font-bold text-gray-900"></p>
+                    </div>
+                    <button onclick="copyText('modalPass', 'Password')" class="text-rose-600 hover:bg-rose-100 p-2 rounded-md transition"><i class="fa-regular fa-copy"></i></button>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 border-t flex gap-3">
+                <button onclick="closeModal('studentModal')" class="flex-1 border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold py-2.5 rounded-xl transition">Close</button>
+                <button id="modalCopyAllBtn" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl transition"><i class="fa-solid fa-copy"></i> Copy All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Available Courses Modal -->
+    <div id="courseModal" class="fixed inset-0 z-[100] hidden bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg modal-enter overflow-hidden flex flex-col max-h-[80vh]">
+            <div class="bg-rose-600 p-4 flex justify-between items-center text-white">
+                <h3 class="font-bold text-lg"><i class="fa-solid fa-laptop-file mr-2"></i> All Available Courses</h3>
+                <button onclick="closeModal('courseModal')" class="text-white hover:text-rose-200 transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-5 overflow-y-auto custom-scrollbar flex-grow bg-gray-50">
+                <ul id="courseListContainer" class="space-y-2">
+                    <!-- Categories/Courses injected here -->
+                </ul>
+            </div>
+            <div class="p-4 bg-white border-t">
+                <button onclick="closeModal('courseModal')" class="w-full border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold py-2.5 rounded-xl transition">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-5 py-3 rounded-full shadow-2xl opacity-0 pointer-events-none flex items-center gap-3">
+        <i class="fa-solid fa-check-circle text-green-400"></i>
+        <span id="toastMessage" class="font-medium tracking-wide">Copied!</span>
+    </div>
+
+    <!-- Script Section -->
+    <script>
+        const rawData = `
+01780300434:fuckfree2022 | Courses = [HSC-25 Science Academic To Admission Course, HulkSpark B/D UNIT ADMISSION COURSE 2025, Mission BRACU Fall 26 (2nd slot )]
+01891761812:Ovidey09@@ | Courses = [WAY TO DHAKA CENTRAL UNIVERSITY]
+01610190635:1742351170@Eshan | Courses = [Mental Preparation & Self Growth Course For AC TO AD, Class 6 English A TO Z Micro Course, HSC-28 Academic to Admission Course (Science)]
+01326517034:@RNR66223@ | Courses = [HSC-26 Science Academic To Admission]
+01858375308:sumi9992 | Courses = [HULKENSTEIN RU C-UNIT CRASH COURSE]
+01727693934:samin69 | Courses = [HSC-26 Science Academic To Admission]
+01771415356:lailahaillalla2028?! | Courses = [HSC 26 REVIVE PROGRAMME~ ACADEMIC TO ADMISSION]
+01720022969:ronaldo098neymar | Courses = [HSC-26 Science Academic To Admission]
+01824121199:Shafi12345 | Courses = [HSC-27 ARTS ACADEMIC TO ADMISSION COURSE, HSC Agriculture A-Z Course]
+01536039411:mujibmeher | Courses = [Canva A to Z]
+01965006182:Tahmid@@12## | Courses = [HSC-27 ARTS ACADEMIC TO ADMISSION COURSE]
+01950911234:HSC_2026 | Courses = [HSC Physics A to Z Course., HSC Chemistry A to Z Course, HSC Higher Math A to Z Course, HSC Biology A to Z Course]
+01611364742:poralekhakortamna | Courses = [HSC 26 REVIVE PROGRAMME~ ACADEMIC TO ADMISSION]
+01974700163:alif1142m | Courses = [HSC-26 Science Academic To Admission]
+01742678387:nehal@#272 | Courses = [HSC-26 Science Academic To Admission, Capstone Revision Programme (Science ) - HSC 26]
+01300700449:arafat11# | Courses = [HSC27 Academic to Admission Course (Revive)]
+01768390946:Castleillu1 | Courses = [Defence Preliminary Crash Course (For Army), IBA BBA Admission Course 25, HSC 25 BUP FASS & FSSS CRASHÂ COURSE, SUST Crash Course-2025]
+01521344754:123456 | Courses = [HSC-25 Science Academic To Admission Course]
+01632551511:oxygen6313**##00 | Courses = [HSC27 Academic to Admission Course (Revive)]
+01829232801:h#j#K6dUfg.gyJy | Courses = [DefencePreliminary Crash Course (For Air Force)]
+01632752084:SHAKIBzahi2007 | Courses = [HSC27 Academic to Admission Course (Revive)]
+01557650035:ar1b_456 | Courses = [HSC27 Academic to Admission Course (Revive)]
+01810351475:01537148816@ | Courses = [HSC-26 Science Academic To Admission]
+01777630264:aHN.8rG.6M4SCjV | Courses = [All Private University CrashÂ Course]
+01831739038:himedlo7879 | Courses = [HSC-27 BUSINESS STUDIES ACADEMIC TO ADMISSION COURSE]
+01309887494:sahaisback4050 | Courses = [HSC-26 BUSINESS STUDIES REVIVE ACADEMIC TO ADMISSION COURSE]
+01703530806:Rakibuwu555 | Courses = [HSC-26 HUMANITIES REVIVE ACADEMIC TO ADMISSION COURSE]
+01717366611:78789807878980 | Courses = [SSC General Math A to Z Micro Course]
+01945527687:msn2015mns07 | Courses = [HSC Chemistry A to Z Course, HSC Biology A to Z Course, HSC Sociology (A-Z) COURSE, HSC Economics (A-Z) Course, HSC Civics (A-Z) Course, HSC History (A-Z) Course, ICT A-Z Course For HSC]
+01577311553:sor4420h | Courses = [HSC27 Academic to Admission Course (Revive)]
+01787211588:Nayim11@@ | Courses = [HSC27 Academic to Admission Course (Revive)]
+01752934291:Tawhid3467tr | Courses = [Defence Preliminary Crash Course (For Army+ Navy)]
+01814445332:sadmanLOKMAN | Courses = [Advanced Area Marking for MEDICAL & VARSITY ADMISSION (Biology), Advanced Area Marking for MEDICAL & VARSITY ADMISSIONÂ (Chemistry)]
+01919467101:amiahnaf | Courses = [Precise Engineering Question bank Solving Course]
+01329113345:drshahalam77 | Courses = [HSC-25 Arts Academic To Admission Course]
+01577231997:seyam2518 | Courses = [HSC-27 ARTS ACADEMIC TO ADMISSION COURSE]
+01904999566:5@5@5@5@ | Courses = [Top 5 Skills Free Course, HSC-27 ARTS ACADEMIC TO ADMISSION COURSE]
+01739207574:L.h5QrSAjTxv8@9 | Courses = [EV Premium Course For HSC-27]
+01611630514:123456 | Courses = [HSC-26 Science Academic To Admission]
+01952695689:zihaD122333 | Courses = [HulkStrike Varsity A Unit Admission-25, Last Hope Biology 2.0 Crash Course]
+01876722383:87979752@aA | Courses = [HSC-26 Science Academic To Admission]
+01796676973:412593 | Courses = [HSC Bangla (A-Z) Course, HSC English (A-Z) Course, ICT A-Z Course For HSC]
+01320552998:AVATAR567790 | Courses = [HULKENSTEIN AGRI + GST Crash Course]
+01913094397:87979752@aaA | Courses = [HSC27 Academic to Admission Course (Revive)]
+01328477419:naim.2010 | Courses = [HSC-27 BUSINESS STUDIES ACADEMIC TO ADMISSION COURSE]
+01741854029:l0986677 | Courses = [HSC27 Academic to Admission Course (Revive)]
+01305137680:506997JPPPPP | Courses = [HSC-26 Science Academic To Admission, Capstone Revision Programme (Science ) - HSC 26, Capstone Revision Program MCQ Preparation (HSC 26), Engineering University Complete Admission Preparation Course + Varsity Biology]
+01540164695:Abdullah1234 | Courses = [HSC-25 Arts Academic To Admission Course]
+01613679774:01613679774joyonta | Courses = [HSC Physics A to Z Course.]
+01778443203:05984FGCVN | Courses = [Mastering à¦…à¦¨à§à¦¶à§€à¦²à¦¨à§€ â€“ MCQ Solving Course]
+`;
+
+        let allStudents = [];
+        let filteredStudents = [];
+        let allUniqueCoursesList = [];
+        let currentPage = 1;
+        const itemsPerPage = 20;
+
+        window.addEventListener("scroll", () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            document.getElementById("scrollProgress").style.width = (height > 0 ? (winScroll / height) * 100 : 0) + "%";
+        });
+
+        function initApp() {
+            parseData();
+            filteredStudents = [...allStudents];
+            renderPage();
+            setupSearch();
+            renderCourseModalList();
+        }
+
+        // Custom Parser for Edge Course BD (Name field is missing)
+        function parseData() {
+            const lines = rawData.trim().split('\n');
+            const uniqueMap = new Map();
+            const courseSet = new Set();
+            
+            // Regex to extract: ID:Password | Courses = [course1, course2]
+            const regex = /^([^:]+):([^\|]+)\s*\|\s*Courses\s*=\s*\[(.*?)\]/;
+
+            lines.forEach(line => {
+                const match = line.match(regex);
+                if (match) {
+                    const phone = match[1].trim();
+                    const password = match[2].trim();
+                    let rawCourses = match[3].replace(/&#x27;/g, "'").replace(/&amp;/g, "&");
+                    let courses = [...new Set(rawCourses.split(',').map(c => c.trim()))];
+                    
+                    courses.forEach(c => courseSet.add(c));
+
+                    if (!uniqueMap.has(phone)) {
+                        uniqueMap.set(phone, {
+                            id: phone,
+                            password: password,
+                            name: "Edge Course Student", // যেহেতু ডাটায় নাম নেই
+                            courses: courses
+                        });
+                    }
+                }
+            });
+
+            allStudents = Array.from(uniqueMap.values());
+            allUniqueCoursesList = Array.from(courseSet).sort();
+            
+            document.getElementById('totalCount').innerText = allStudents.length;
+            document.getElementById('uniqueCourseCount').innerText = allUniqueCoursesList.length;
+        }
+
+        function renderPage() {
+            const grid = document.getElementById('studentsGrid');
+            const noResults = document.getElementById('noResults');
+            
+            if (filteredStudents.length === 0) {
+                grid.innerHTML = '';
+                document.getElementById('pagination').innerHTML = '';
+                noResults.classList.remove('hidden');
+                return;
+            } else {
+                noResults.classList.add('hidden');
+            }
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const studentsToShow = filteredStudents.slice(startIndex, startIndex + itemsPerPage);
+
+            let html = '';
+            studentsToShow.forEach(student => {
+                let courseHTML = student.courses.map(course => {
+                    let safeCourse = course.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    return `<div onclick="searchByCourse('${safeCourse}')" class="cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all w-full text-left px-3 py-2 rounded-lg border text-xs font-semibold whitespace-normal leading-relaxed ${getBadgeStyle(course)}">
+                        <i class="fa-solid fa-graduation-cap mr-1.5 opacity-70"></i> ${course}
+                    </div>`;
+                }).join('');
+
+                html += `
+                <div class="bg-white rounded-2xl shadow-[0_2px_10px_-3px_rgba(225,29,72,0.1)] overflow-hidden flex flex-col border border-gray-200">
+                    <div class="p-5 border-b border-gray-100">
+                        <h2 class="text-lg font-bold text-gray-900 truncate uppercase">${student.name}</h2>
+                        <div class="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 px-2.5 py-1 rounded-md text-xs font-bold mt-2">
+                            <i class="fa-solid fa-id-card"></i> ${student.id}
+                        </div>
+                    </div>
+                    
+                    <div class="p-5 flex-grow bg-white">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Enrolled Courses</span>
+                            <span class="w-6 h-6 flex items-center justify-center rounded-full bg-rose-100 text-rose-700 text-xs font-bold">${student.courses.length}</span>
+                        </div>
+                        <div class="flex flex-col gap-2 max-h-44 overflow-y-auto custom-scrollbar pr-2">
+                            ${courseHTML}
+                        </div>
+                    </div>
+
+                    <div class="p-4 border-t border-gray-100 flex gap-3">
+                        <button onclick="openStudentModal('${student.id}')" class="flex-1 bg-white border-2 border-rose-600 text-rose-600 hover:bg-rose-50 font-bold py-2 rounded-xl transition flex justify-center items-center gap-2">
+                            <i class="fa-solid fa-eye"></i> Details
+                        </button>
+                        <button onclick="copyFormattedDetails('${student.id}')" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 rounded-xl transition flex justify-center items-center gap-2">
+                            <i class="fa-solid fa-copy"></i> Copy
+                        </button>
+                    </div>
+                </div>`;
+            });
+
+            grid.innerHTML = html;
+            renderPagination();
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+            const container = document.getElementById('pagination');
+            let html = '';
+        
+            if (totalPages <= 1) { container.innerHTML = ''; return; }
+        
+            // First & Prev Buttons
+            html += `<button onclick="changePage(1)" class="w-10 h-10 flex items-center justify-center rounded-lg border ${currentPage === 1 ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-white hover:bg-rose-50 text-rose-600 font-bold'}" ${currentPage === 1 ? 'disabled' : ''} title="First Page"><i class="fa-solid fa-angles-left"></i></button>`;
+            html += `<button onclick="changePage(${currentPage - 1})" class="w-10 h-10 flex items-center justify-center rounded-lg border ${currentPage === 1 ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-white hover:bg-rose-50 text-rose-600 font-bold'}" ${currentPage === 1 ? 'disabled' : ''} title="Previous Page"><i class="fa-solid fa-chevron-left"></i></button>`;
+        
+            // Dynamic Page Numbers 
+            let start = Math.max(1, currentPage - 1);
+            let end = Math.min(totalPages, currentPage + 1);
+            
+            if (currentPage === 1) end = Math.min(3, totalPages);
+            if (currentPage === totalPages) start = Math.max(1, totalPages - 2);
+        
+            for (let i = start; i <= end; i++) {
+                html += `<button onclick="changePage(${i})" class="w-10 h-10 flex items-center justify-center rounded-lg border font-bold transition-colors ${i === currentPage ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-gray-700 hover:bg-rose-50 hover:text-rose-600'}">${i}</button>`;
+            }
+        
+            // Next & Last Buttons
+            html += `<button onclick="changePage(${currentPage + 1})" class="w-10 h-10 flex items-center justify-center rounded-lg border ${currentPage === totalPages ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-white hover:bg-rose-50 text-rose-600 font-bold'}" ${currentPage === totalPages ? 'disabled' : ''} title="Next Page"><i class="fa-solid fa-chevron-right"></i></button>`;
+            html += `<button onclick="changePage(${totalPages})" class="w-10 h-10 flex items-center justify-center rounded-lg border ${currentPage === totalPages ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-white hover:bg-rose-50 text-rose-600 font-bold'}" ${currentPage === totalPages ? 'disabled' : ''} title="Last Page"><i class="fa-solid fa-angles-right"></i></button>`;
+        
+            container.innerHTML = html;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderPage();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function setupSearch() {
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase().trim();
+                filteredStudents = allStudents.filter(s => 
+                    s.name.toLowerCase().includes(term) ||
+                    s.id.includes(term) ||
+                    s.password.toLowerCase().includes(term) ||
+                    s.courses.some(c => c.toLowerCase().includes(term))
+                );
+                currentPage = 1;
+                renderPage();
+            });
+        }
+
+        function searchByCourse(course) {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.value = course; 
+            
+            const term = course.toLowerCase().trim();
+            filteredStudents = allStudents.filter(s => 
+                s.name.toLowerCase().includes(term) ||
+                s.id.includes(term) ||
+                s.courses.some(c => c.toLowerCase().includes(term))
+            );
+            
+            currentPage = 1;
+            renderPage();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function getBadgeStyle(courseName) {
+            let name = courseName.toLowerCase();
+            if (name.includes('engineering') || name.includes('varsity')) return 'bg-blue-50 text-blue-700 border-blue-200';
+            if (name.includes('hsc') || name.includes('academic') || name.includes('physics')) return 'bg-green-50 text-green-700 border-green-200';
+            if (name.includes('mcq') || name.includes('revision')) return 'bg-purple-50 text-purple-700 border-purple-200';
+            return 'bg-rose-50 text-rose-700 border-rose-200';
+        }
+
+        // Modals
+        function openStudentModal(id) {
+            const student = allStudents.find(s => s.id === id);
+            if(student) {
+                document.getElementById('modalName').innerText = student.name;
+                document.getElementById('modalId').innerText = student.id;
+                document.getElementById('modalPass').innerText = student.password;
+                document.getElementById('modalCopyAllBtn').onclick = () => copyFormattedDetails(student.id);
+                document.getElementById('studentModal').classList.remove('hidden');
+            }
+        }
+        function openCourseModal() {
+            document.getElementById('courseModal').classList.remove('hidden');
+        }
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function renderCourseModalList() {
+            const container = document.getElementById('courseListContainer');
+            if (allUniqueCoursesList.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500 py-4">No courses available.</p>';
+                return;
+            }
+            container.innerHTML = allUniqueCoursesList.map((c, i) => {
+                let safeCourse = c.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                return `<li onclick="searchByCourse('${safeCourse}'); closeModal('courseModal')" class="cursor-pointer hover:bg-rose-50 hover:text-rose-700 transition-colors bg-white border border-gray-200 p-3 rounded-lg text-sm font-semibold text-gray-700 shadow-sm flex items-center gap-3">
+                    <span class="w-6 h-6 rounded bg-rose-100 text-rose-600 flex items-center justify-center text-xs">${i+1}</span>
+                    ${c}
+                </li>`;
+            }).join('');
+        }
+
+        // Copy Actions
+        function copyText(elementId, label) {
+            navigator.clipboard.writeText(document.getElementById(elementId).innerText).then(() => showToast(`${label} copied!`));
+        }
+        function copyFormattedDetails(id) {
+            const student = allStudents.find(s => s.id === id);
+            // যেহেতু নাম নেই, তাই কপিতে শুধু আইডি আর পাসওয়ার্ড রাখা হলো
+            const textToCopy = `Edge Course BD Login\nID/Mobile: ${student.id}\nPassword: ${student.password}`;
+            navigator.clipboard.writeText(textToCopy).then(() => showToast('Login details copied!'));
+        }
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').innerText = msg;
+            toast.classList.remove('opacity-0', 'translate-y-2');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-2');
+            }, 2000);
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
