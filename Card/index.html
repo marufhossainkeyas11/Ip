@@ -1,350 +1,374 @@
-
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro ID Card Generator</title>
+    <title>Professional ID Card Generator</title>
     
-    <!-- Tailwind CSS for rapid styling -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Google Fonts: Inter for a clean, professional look -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- html2canvas for downloading the card as an image -->
+    <!-- html2canvas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
+            background-color: #f0f4f8;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
         }
-        
-        /* Custom scrollbar for the form area */
+
+        /* Custom Scrollbar for form */
         .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
+            width: 8px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f1f1; 
+            background: #f1f5f9; 
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
             background: #cbd5e1; 
-            border-radius: 10px;
+            border-radius: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #94a3b8; 
         }
 
-        /* ID Card Specific Styles to ensure consistency */
-        .id-card {
-            width: 320px;
-            height: 480px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
-        
-        /* Watermark style */
-        .watermark {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80%;
-            opacity: 0.05;
-            pointer-events: none;
-            z-index: 0;
+        /* Ensure card font is completely web-safe for html2canvas */
+        .id-card-font {
+            font-family: Arial, Helvetica, sans-serif;
+            line-height: normal; /* Prevents text clipping in canvas */
         }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 md:p-8">
+<body class="h-screen w-screen flex flex-col md:flex-row overflow-hidden">
 
-    <div class="max-w-6xl w-full bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col lg:flex-row h-full lg:h-[85vh]">
-        
-        <!-- LEFT COLUMN: Input Form -->
-        <div class="w-full lg:w-5/12 bg-white border-r border-gray-200 flex flex-col h-full relative z-10">
-            <div class="p-6 border-b border-gray-100 bg-gray-50">
-                <h1 class="text-2xl font-bold text-gray-800 tracking-tight">ID Card Generator</h1>
-                <p class="text-sm text-gray-500 mt-1">Fill the details below to generate a professional ID card.</p>
-            </div>
-
-            <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-5">
-                
-                <!-- College Info Section -->
-                <div>
-                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Institution Details</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">College Name</label>
-                            <input type="text" id="inputCollegeName" value="Global International College" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">College Logo (Monogram)</label>
-                            <input type="file" id="inputLogo" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="border-t border-gray-100 my-2"></div>
-
-                <!-- Student Info Section -->
-                <div>
-                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Student Details</h3>
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                                <input type="text" id="inputFirstName" value="Maruf" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                                <input type="text" id="inputLastName" value="Hossain" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors">
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Student Photo</label>
-                            <input type="file" id="inputPhoto" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors">
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-                                <input type="date" id="inputDOB" value="2005-08-15" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Expiry Year</label>
-                                <input type="text" id="inputExpiry" value="2027" placeholder="e.g. 2027" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="border-t border-gray-100 my-2"></div>
-
-                <!-- Authorization Section -->
-                <div>
-                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Authorization</h3>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Principal Signature</label>
-                        <input type="file" id="inputSignature" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors">
-                    </div>
-                </div>
-                
-                <div class="pb-6"></div> <!-- padding for scrolling -->
-            </div>
+    <!-- LEFT COLUMN: Form Inputs -->
+    <div class="w-full md:w-5/12 lg:w-1/3 bg-white h-[50vh] md:h-full border-b md:border-b-0 md:border-r border-gray-200 shadow-lg z-10 flex flex-col">
+        <div class="p-5 border-b border-gray-100 bg-gray-50 flex-shrink-0">
+            <h1 class="text-xl font-bold text-gray-800">ID Card Generator</h1>
+            <p class="text-xs text-gray-500 mt-1">Fill out the details to generate your card.</p>
         </div>
 
-        <!-- RIGHT COLUMN: Live Preview -->
-        <div class="w-full lg:w-7/12 bg-[#e8eef2] p-8 flex flex-col items-center justify-center relative overflow-hidden">
-            
-            <!-- Decorative background elements -->
-            <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50"></div>
-            <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-teal-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50"></div>
-            
-            <!-- ID Card Container -->
-            <div id="idCard" class="id-card bg-white rounded-2xl relative flex flex-col z-10 overflow-hidden border border-gray-200 transform transition-transform hover:scale-[1.02] duration-300">
-                
-                <!-- Card Header (College Info) -->
-                <div class="h-[90px] bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white flex items-center px-4 pt-2 shadow-md relative z-10">
-                    <div class="w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center p-1 shrink-0 overflow-hidden shadow-sm">
-                        <img id="previewLogo" src="https://placehold.co/100x100/ffffff/1e3a8a?text=LOGO" alt="Logo" class="w-full h-full object-contain">
+        <div class="p-5 overflow-y-auto custom-scrollbar flex-1 space-y-5">
+            <!-- College Details -->
+            <div class="space-y-3">
+                <h3 class="text-xs font-bold text-gray-400 uppercase">Institution</h3>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">College Name</label>
+                    <input type="text" id="inCollegeName" value="Global International College" class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition-colors">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">College Logo (Monogram)</label>
+                    <input type="file" id="inLogo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors">
+                </div>
+            </div>
+
+            <hr class="border-gray-100">
+
+            <!-- Student Details -->
+            <div class="space-y-3">
+                <h3 class="text-xs font-bold text-gray-400 uppercase">Student Data</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">First Name</label>
+                        <input type="text" id="inFirstName" value="Maruf" class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-sm">
                     </div>
-                    <div class="ml-3 flex-1">
-                        <h2 id="previewCollegeName" class="text-[13px] font-bold uppercase leading-tight tracking-wide line-clamp-2">Global International College</h2>
-                        <p class="text-[9px] text-blue-200 mt-0.5 tracking-widest uppercase">Student Identity Card</p>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Last Name</label>
+                        <input type="text" id="inLastName" value="Hossain" class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Student Photo</label>
+                    <input type="file" id="inPhoto" accept="image/*" class="w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Date of Birth</label>
+                        <input type="date" id="inDOB" value="2005-08-15" class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Valid Until Year</label>
+                        <input type="number" id="inExpiry" value="2027" class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <hr class="border-gray-100">
+
+            <!-- Authorization -->
+            <div class="space-y-3 pb-6">
+                <h3 class="text-xs font-bold text-gray-400 uppercase">Authorization</h3>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Principal Signature</label>
+                    <input type="file" id="inSignature" accept="image/*" class="w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Live Preview -->
+    <div id="previewContainer" class="w-full md:w-7/12 lg:w-2/3 h-[50vh] md:h-full relative flex flex-col items-center justify-center p-4 bg-[#e2e8f0]">
+        
+        <!-- Wrapper handles CSS scaling so the DOM node remains exact dimensions -->
+        <div id="scaleWrapper" class="transition-transform duration-200 origin-top md:origin-center mt-4 md:mt-0">
+            
+            <!-- THE ID CARD - FIXED DIMENSIONS -->
+            <div id="idCard" class="bg-white id-card-font relative box-border overflow-hidden" 
+                 style="width: 350px; height: 550px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 1px solid #e2e8f0;">
+                
+                <!-- Card Header -->
+                <div class="h-[95px] flex items-center px-4 box-border relative" style="background-color: #1e3a8a;">
+                    <!-- Logo Container -->
+                    <div class="w-[65px] h-[65px] bg-white rounded-full flex items-center justify-center shrink-0 overflow-hidden" style="border: 2px solid white;">
+                        <img id="outLogo" src="https://placehold.co/100x100/ffffff/1e3a8a?text=LOGO" alt="Logo" class="w-[55px] h-[55px] object-contain">
+                    </div>
+                    <!-- College Name -->
+                    <div class="ml-4 w-[240px]">
+                        <h2 id="outCollegeName" class="text-white font-bold" style="font-size: 16px; margin: 0; padding: 0;">GLOBAL INTERNATIONAL COLLEGE</h2>
+                        <p class="text-blue-200 font-normal mt-1" style="font-size: 10px; margin: 0; padding: 0;">STUDENT IDENTITY CARD</p>
                     </div>
                 </div>
 
-                <!-- Card Body (Student Info) -->
-                <div class="flex-1 flex flex-col items-center pt-6 px-6 relative z-10">
-                    <!-- Photo -->
-                    <div class="relative mb-3">
-                        <div class="w-[110px] h-[130px] rounded-lg border-[3px] border-white shadow-[0_4px_10px_rgba(0,0,0,0.15)] overflow-hidden bg-gray-100 z-10 relative">
-                            <img id="previewPhoto" src="https://placehold.co/220x260/e2e8f0/475569?text=PHOTO" alt="Student Photo" class="w-full h-full object-cover">
-                        </div>
-                        <!-- Little decorative ribbon -->
-                        <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-[8px] font-bold px-3 py-1 rounded-full uppercase tracking-wider z-20 shadow-sm border border-blue-700">
-                            Student
+                <!-- Card Body -->
+                <div class="pt-6 px-6 flex flex-col items-center relative box-border" style="height: 405px;">
+                    
+                    <!-- Student Photo -->
+                    <div class="w-[130px] h-[150px] relative mb-2">
+                        <img id="outPhoto" src="https://placehold.co/200x240/f1f5f9/94a3b8?text=PHOTO" alt="Student" class="w-full h-full object-cover" style="border-radius: 8px; border: 2px solid #e2e8f0;">
+                        <!-- Student Tag -->
+                        <div class="absolute -bottom-3 left-1/2" style="transform: translateX(-50%); background-color: #2563eb; color: white; padding: 4px 16px; border-radius: 12px; font-size: 11px; font-weight: bold; border: 2px solid white;">
+                            STUDENT
                         </div>
                     </div>
 
                     <!-- Name -->
-                    <h3 class="text-xl font-bold text-gray-800 uppercase tracking-wide mt-2 text-center w-full truncate">
-                        <span id="previewFirstName">Maruf</span> <span id="previewLastName">Hossain</span>
+                    <h3 id="outFullName" class="font-bold text-center mt-6 text-[#111827] w-full truncate" style="font-size: 22px; margin-bottom: 2px;">
+                        MARUF HOSSAIN
                     </h3>
                     
-                    <!-- ID Number (Auto generated for realism) -->
-                    <p class="text-[10px] text-gray-500 font-mono mt-1 mb-4">ID: <span id="randomId">STU-8472910</span></p>
+                    <!-- ID Number -->
+                    <p class="text-center text-[#6b7280] mb-5 w-full" style="font-size: 13px;">
+                        ID: <span id="outIdNumber">STU-1234567</span>
+                    </p>
 
-                    <!-- Details Grid -->
-                    <div class="w-full space-y-2 mt-1">
-                        <div class="flex justify-between items-center border-b border-gray-100 pb-1">
-                            <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">DOB</span>
-                            <span id="previewDOB" class="text-[12px] font-bold text-gray-800">15 Aug 2005</span>
+                    <!-- Details Table -->
+                    <div class="w-full px-2 mt-2">
+                        <div class="flex justify-between border-b border-gray-200 pb-2 mb-2">
+                            <span style="font-size: 12px; color: #6b7280; font-weight: bold;">DOB</span>
+                            <span id="outDOB" style="font-size: 13px; color: #111827; font-weight: bold;">15 AUG 2005</span>
                         </div>
-                        <div class="flex justify-between items-center border-b border-gray-100 pb-1">
-                            <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Course</span>
-                            <span class="text-[12px] font-bold text-gray-800">Undergraduate</span>
+                        <div class="flex justify-between border-b border-gray-200 pb-2">
+                            <span style="font-size: 12px; color: #6b7280; font-weight: bold;">COURSE</span>
+                            <span style="font-size: 13px; color: #111827; font-weight: bold;">Undergraduate</span>
+                        </div>
+                    </div>
+
+                    <!-- Dummy Barcode & Signature Row -->
+                    <div class="absolute bottom-4 left-6 right-6 flex justify-between items-end">
+                        <!-- Barcode Visual -->
+                        <div class="w-[100px] h-[30px] opacity-60 flex gap-[2px]">
+                            <div style="width: 3px; height: 100%; background: black;"></div>
+                            <div style="width: 1px; height: 100%; background: black;"></div>
+                            <div style="width: 4px; height: 100%; background: black;"></div>
+                            <div style="width: 2px; height: 100%; background: black;"></div>
+                            <div style="width: 5px; height: 100%; background: black;"></div>
+                            <div style="width: 1px; height: 100%; background: black;"></div>
+                            <div style="width: 3px; height: 100%; background: black;"></div>
+                            <div style="width: 4px; height: 100%; background: black;"></div>
+                            <div style="width: 2px; height: 100%; background: black;"></div>
+                            <div style="width: 1px; height: 100%; background: black;"></div>
+                            <div style="width: 5px; height: 100%; background: black;"></div>
+                            <div style="width: 2px; height: 100%; background: black;"></div>
+                            <div style="width: 3px; height: 100%; background: black;"></div>
+                            <div style="width: 1px; height: 100%; background: black;"></div>
+                            <div style="width: 4px; height: 100%; background: black;"></div>
+                            <div style="width: 3px; height: 100%; background: black;"></div>
+                            <div style="width: 2px; height: 100%; background: black;"></div>
+                            <div style="width: 5px; height: 100%; background: black;"></div>
+                            <div style="width: 1px; height: 100%; background: black;"></div>
+                        </div>
+
+                        <!-- Signature -->
+                        <div class="flex flex-col items-center justify-end" style="width: 90px;">
+                            <img id="outSignature" src="https://placehold.co/100x40/ffffff/000000?text=Sign" alt="Signature" style="height: 35px; object-fit: contain; margin-bottom: 2px;">
+                            <div style="width: 100%; height: 1px; background-color: #9ca3af; margin-bottom: 4px;"></div>
+                            <span style="font-size: 10px; color: #6b7280; font-weight: bold;">PRINCIPAL</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Card Footer (Signatures & Expiry) -->
-                <div class="mt-auto px-6 pb-4 w-full flex justify-between items-end relative z-10">
-                    <!-- Dummy Barcode for authenticity -->
-                    <div class="w-20">
-                        <svg class="w-full h-8 opacity-70" viewBox="0 0 100 30" preserveAspectRatio="none">
-                            <rect x="0" y="0" width="3" height="30" fill="#333"/>
-                            <rect x="5" y="0" width="1" height="30" fill="#333"/>
-                            <rect x="8" y="0" width="4" height="30" fill="#333"/>
-                            <rect x="14" y="0" width="2" height="30" fill="#333"/>
-                            <rect x="18" y="0" width="5" height="30" fill="#333"/>
-                            <rect x="25" y="0" width="1" height="30" fill="#333"/>
-                            <rect x="28" y="0" width="3" height="30" fill="#333"/>
-                            <rect x="33" y="0" width="4" height="30" fill="#333"/>
-                            <rect x="39" y="0" width="2" height="30" fill="#333"/>
-                            <rect x="43" y="0" width="1" height="30" fill="#333"/>
-                            <rect x="46" y="0" width="5" height="30" fill="#333"/>
-                            <rect x="53" y="0" width="2" height="30" fill="#333"/>
-                            <rect x="57" y="0" width="4" height="30" fill="#333"/>
-                            <rect x="63" y="0" width="1" height="30" fill="#333"/>
-                            <rect x="66" y="0" width="3" height="30" fill="#333"/>
-                            <rect x="71" y="0" width="5" height="30" fill="#333"/>
-                            <rect x="78" y="0" width="2" height="30" fill="#333"/>
-                            <rect x="82" y="0" width="4" height="30" fill="#333"/>
-                            <rect x="88" y="0" width="1" height="30" fill="#333"/>
-                            <rect x="91" y="0" width="3" height="30" fill="#333"/>
-                            <rect x="96" y="0" width="4" height="30" fill="#333"/>
-                        </svg>
-                    </div>
-
-                    <!-- Signature -->
-                    <div class="flex flex-col items-center">
-                        <img id="previewSignature" src="https://placehold.co/150x50/ffffff/000000?text=Sign" alt="Signature" class="h-8 object-contain mb-1 mix-blend-darken">
-                        <div class="w-16 h-px bg-gray-400 mb-1"></div>
-                        <span class="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Principal</span>
-                    </div>
-                </div>
-
-                <!-- Expiry Banner -->
-                <div class="h-6 bg-red-600 text-white text-[10px] font-bold uppercase tracking-widest flex items-center justify-center relative z-10">
-                    Valid Until: <span id="previewExpiry" class="ml-1">2027</span>
+                <!-- Footer Expiry -->
+                <div class="absolute bottom-0 w-full h-[50px] flex items-center justify-center box-border" style="background-color: #dc2626;">
+                    <span id="outExpiryText" style="color: white; font-weight: bold; font-size: 14px;">
+                        VALID UNTIL: 2027
+                    </span>
                 </div>
             </div>
-
-            <!-- Download Button -->
-            <button id="downloadBtn" class="mt-8 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center gap-2 transform active:scale-95 z-10">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
-                </svg>
-                Download ID Card
-            </button>
-            <p class="text-xs text-gray-500 mt-3 z-10 text-center max-w-xs">Downloads a high-resolution PNG of the card above.</p>
-
+            
         </div>
+
+        <!-- Download Button -->
+        <button id="downloadBtn" class="absolute bottom-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center gap-2 z-20">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+            Download ID Card
+        </button>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             
-            // Format Date Function (e.g., 2005-08-15 to 15 Aug 2005)
-            const formatDate = (dateString) => {
-                if (!dateString) return '';
-                const options = { day: 'numeric', month: 'short', year: 'numeric' };
-                const date = new Date(dateString);
-                // Handle invalid dates gracefully
-                if (isNaN(date)) return dateString; 
-                return date.toLocaleDateString('en-GB', options);
+            // Generate Random ID on load
+            document.getElementById('outIdNumber').textContent = 'STU-' + Math.floor(1000000 + Math.random() * 9000000);
+
+            // Responsive Scaling Logic to ensure fixed DOM size while fitting small screens visually
+            const resizeCard = () => {
+                const container = document.getElementById('previewContainer');
+                const wrapper = document.getElementById('scaleWrapper');
+                const cardWidth = 350;
+                const cardHeight = 550;
+                
+                // Calculate available space (with some padding for UI elements)
+                const availableWidth = container.clientWidth - 40;
+                const availableHeight = container.clientHeight - 120; // Room for download button
+                
+                // Determine scale required
+                const scaleX = availableWidth / cardWidth;
+                const scaleY = availableHeight / cardHeight;
+                
+                // Apply scale (max scale 1 - don't stretch beyond original)
+                const scale = Math.min(scaleX, scaleY, 1);
+                
+                wrapper.style.transform = `scale(${scale})`;
             };
 
-            // Bind text inputs
-            const bindText = (inputId, previewId, formatter = null) => {
+            window.addEventListener('resize', resizeCard);
+            resizeCard(); // Initial call
+
+            // Format Date Function
+            const formatDOB = (dateString) => {
+                if (!dateString) return '';
+                const date = new Date(dateString);
+                if (isNaN(date)) return dateString;
+                const options = { day: 'numeric', month: 'short', year: 'numeric' };
+                // Uppercase strictly applied in JS, not CSS, to prevent html2canvas clipping
+                return date.toLocaleDateString('en-GB', options).toUpperCase();
+            };
+
+            // String updating function (applies standard JS toUpperCase)
+            const updateText = (inputId, outId, isUppercase = false, formatter = null) => {
                 const input = document.getElementById(inputId);
-                const preview = document.getElementById(previewId);
-                
-                // Initialize
-                if(formatter) {
-                    preview.textContent = formatter(input.value) || '...';
-                } else {
-                    preview.textContent = input.value || '...';
+                const output = document.getElementById(outId);
+
+                const applyFormat = (val) => {
+                    let res = val;
+                    if (formatter) res = formatter(res);
+                    if (isUppercase && res) res = res.toUpperCase();
+                    return res || '...';
                 }
 
-                // Listen to changes
                 input.addEventListener('input', (e) => {
-                    if(formatter) {
-                        preview.textContent = formatter(e.target.value) || '...';
-                    } else {
-                        preview.textContent = e.target.value || '...';
-                    }
+                    output.textContent = applyFormat(e.target.value);
                 });
+                
+                // Initialize
+                output.textContent = applyFormat(input.value);
             };
 
-            // Bind image inputs via FileReader
-            const bindImage = (inputId, previewId) => {
+            // Full Name special handler
+            const updateFullName = () => {
+                const first = document.getElementById('inFirstName').value || '';
+                const last = document.getElementById('inLastName').value || '';
+                const fullName = `${first} ${last}`.trim().toUpperCase();
+                document.getElementById('outFullName').textContent = fullName || 'STUDENT NAME';
+            }
+            document.getElementById('inFirstName').addEventListener('input', updateFullName);
+            document.getElementById('inLastName').addEventListener('input', updateFullName);
+
+            // Expiry special handler
+            const updateExpiry = () => {
+                const year = document.getElementById('inExpiry').value;
+                document.getElementById('outExpiryText').textContent = `VALID UNTIL: ${year || 'YYYY'}`;
+            }
+            document.getElementById('inExpiry').addEventListener('input', updateExpiry);
+
+            // Initialize Texts
+            updateText('inCollegeName', 'outCollegeName', true);
+            updateText('inDOB', 'outDOB', false, formatDOB);
+            updateFullName();
+            updateExpiry();
+
+            // Image Upload Handler
+            const bindImage = (inputId, outId) => {
                 const input = document.getElementById(inputId);
-                const preview = document.getElementById(previewId);
+                const output = document.getElementById(outId);
 
                 input.addEventListener('change', function(e) {
                     const file = e.target.files[0];
                     if (file) {
                         const reader = new FileReader();
                         reader.onload = function(event) {
-                            preview.src = event.target.result;
+                            output.src = event.target.result;
                         }
                         reader.readAsDataURL(file);
                     }
                 });
             };
 
-            // Execute bindings
-            bindText('inputCollegeName', 'previewCollegeName');
-            bindText('inputFirstName', 'previewFirstName');
-            bindText('inputLastName', 'previewLastName');
-            bindText('inputDOB', 'previewDOB', formatDate);
-            bindText('inputExpiry', 'previewExpiry');
+            bindImage('inLogo', 'outLogo');
+            bindImage('inPhoto', 'outPhoto');
+            bindImage('inSignature', 'outSignature');
 
-            bindImage('inputLogo', 'previewLogo');
-            bindImage('inputPhoto', 'previewPhoto');
-            bindImage('inputSignature', 'previewSignature');
-
-            // Generate a random ID number on load
-            document.getElementById('randomId').textContent = 'STU-' + Math.floor(1000000 + Math.random() * 9000000);
-
-            // Download functionality using html2canvas
+            // Download using html2canvas
             document.getElementById('downloadBtn').addEventListener('click', () => {
                 const card = document.getElementById('idCard');
                 const btn = document.getElementById('downloadBtn');
                 
-                // Visual feedback on button
                 const originalText = btn.innerHTML;
-                btn.innerHTML = 'Generating...';
-                btn.classList.add('opacity-75', 'cursor-not-allowed');
+                btn.innerHTML = 'Generating Image...';
+                btn.classList.add('opacity-75', 'pointer-events-none');
                 
-                // Use html2canvas
-                html2canvas(card, {
-                    scale: 3, // High resolution
-                    useCORS: true, // Allow cross-origin images if any
-                    backgroundColor: null, // Keep transparent edges if any
-                    logging: false
-                }).then(canvas => {
-                    // Create download link
-                    const link = document.createElement('a');
-                    link.download = `ID_Card_${document.getElementById('inputFirstName').value || 'Student'}.png`;
-                    link.href = canvas.toDataURL('image/png');
-                    link.click();
-                    
-                    // Reset button
-                    btn.innerHTML = originalText;
-                    btn.classList.remove('opacity-75', 'cursor-not-allowed');
-                }).catch(err => {
-                    console.error('Error generating image:', err);
-                    alert('There was an issue generating the ID card image.');
-                    btn.innerHTML = originalText;
-                    btn.classList.remove('opacity-75', 'cursor-not-allowed');
-                });
+                // Momentarily reset scale just to be 100% perfectly safe during capture, 
+                // though html2canvas usually targets the unscaled node size anyway.
+                const wrapper = document.getElementById('scaleWrapper');
+                const currentTransform = wrapper.style.transform;
+                wrapper.style.transform = 'scale(1)';
+
+                setTimeout(() => {
+                    html2canvas(card, {
+                        scale: 3, // Crisp resolution
+                        useCORS: true,
+                        logging: false,
+                        backgroundColor: null
+                    }).then(canvas => {
+                        // Restore scale immediately
+                        wrapper.style.transform = currentTransform;
+
+                        // Trigger download
+                        const link = document.createElement('a');
+                        const fName = document.getElementById('inFirstName').value || 'Student';
+                        link.download = `ID_Card_${fName}.png`;
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                        
+                        btn.innerHTML = originalText;
+                        btn.classList.remove('opacity-75', 'pointer-events-none');
+                    }).catch(err => {
+                        wrapper.style.transform = currentTransform;
+                        console.error('Error generating image:', err);
+                        alert('Could not generate the ID card.');
+                        btn.innerHTML = originalText;
+                        btn.classList.remove('opacity-75', 'pointer-events-none');
+                    });
+                }, 100); // Tiny timeout to let the scale(1) render if needed
             });
         });
     </script>
 </body>
 </html>
-
+```
