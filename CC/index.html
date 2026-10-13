@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Data Parser and Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans min-h-full flex flex-col transition-colors duration-200">
+
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-md shadow-indigo-500/20">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">CSV Data Explorer</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Parse, filter, mask sensitive items, and export datasets easily</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <!-- Toggle Masking Switch -->
+                <label class="flex items-center cursor-pointer bg-slate-100 dark:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-sm">
+                    <span class="mr-2 text-xs font-medium text-slate-600 dark:text-slate-300">Mask Cards</span>
+                    <input type="checkbox" id="maskToggle" class="sr-only peer" checked>
+                    <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600 relative"></div>
+                </label>
+                <!-- Theme Toggle Button -->
+                <button id="themeToggle" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition">
+                    <svg id="sunIcon" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    <svg id="moonIcon" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full flex flex-col gap-6">
+        
+        <!-- Collapsible Raw CSV Data Editor Panel -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between cursor-pointer select-none" id="editorHeader">
+                <div class="flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                    <h2 class="font-semibold text-sm">Raw CSV Data Input</h2>
+                    <span id="editorStatusBadge" class="text-xs px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300 font-medium">Pre-loaded</span>
+                </div>
+                <button class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
+                    <span id="toggleText">Hide Editor</span>
+                    <svg id="chevronIcon" class="w-4 h-4 transform rotate-180 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+            </div>
+            <div id="editorBody" class="p-6 transition-all duration-300">
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">Paste your custom comma-separated or pipe-separated CSV dataset below or edit the existing records, then click parse.</p>
+                <textarea id="csvInput" rows="6" class="w-full font-mono text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition resize-y"></textarea>
+                <div class="mt-3 flex items-center justify-end gap-3">
+                    <button id="resetBtn" class="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition">Reset Default</button>
+                    <button id="parseBtn" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs rounded-xl shadow-lg shadow-indigo-600/20 transition flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        Load / Parse Data
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+            <!-- Search & Filters -->
+            <div class="relative flex-1">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </span>
+                <input type="text" id="searchInput" placeholder="Search across all fields (Name, Email, City, State, Status...)" class="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm transition">
+            </div>
+
+            <!-- Stats & Action Buttons -->
+            <div class="flex flex-wrap items-center gap-2.5">
+                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-xl text-xs flex items-center gap-2 shadow-sm">
+                    <span class="text-slate-500 dark:text-slate-400">Records:</span>
+                    <span id="recordCountBadge" class="font-bold text-indigo-600 dark:text-indigo-400">0</span>
+                </div>
+                <button id="copyFilteredBtn" class="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-xl text-xs font-medium shadow-sm transition flex items-center gap-2">
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    Copy Filtered CSV
+                </button>
+                <button id="exportCsvBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-medium shadow-sm shadow-indigo-600/20 transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Export CSV
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col flex-1">
+            <div class="overflow-x-auto flex-1 max-h-[600px] relative">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead class="bg-slate-50 dark:bg-slate-700/50 sticky top-0 z-10 border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold uppercase tracking-wider">
+                        <tr id="tableHeaderRow">
+                            <!-- Populated dynamically -->
+                        </tr>
+                    </thead>
+                    <tbody id="tableBodyRow" class="divide-y divide-slate-100 dark:divide-slate-700/50 text-slate-700 dark:text-slate-200">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+                <!-- Empty state -->
+                <div id="emptyState" class="hidden flex flex-col items-center justify-center py-16 px-4 text-center">
+                    <svg class="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <h3 class="text-sm font-semibold text-slate-600 dark:text-slate-300">No matching records found</h3>
+                    <p class="text-xs text-slate-400 mt-1">Try modifying your search filter or checking your raw CSV input data.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-xs font-medium">
+        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        <span id="toastMessage">Action completed successfully</span>
+    </div>
+
+    <script>
+        // Default dataset provided
+        const defaultCsvData = `4472270131386609|02|30|208||Chris Holt|43795 Transit Sq #202|Ashburn|VA|20147|US|3064707726|chrisholt25@yahoo.com|CheckDx => Live| URL：https://dxchecklive.com
+4342562547854602|04|30|374||Alfred Rogers|122 W Acacia St|Stockton|CA|95202|US|8701591934|alfredrogers42@gmail.co|CheckDx => Live| URL：https://dxchecklive.com
+4358802286162705|04|34|736||Priscilla Saucedo|305 Ohio St|Marietta|OH|45750|US|2649471264|Amosimauridi5@gmail.com|CheckDx => Live| URL：https://dxchecklive.com
+4466210614925950|04|31|175||Jose Quesada|616 S Wildwood Dr|Irving|TX|75060|US|7247261946|Jose0Quesada3@gmail.com|CheckDx => Live| URL：https://dxchecklive.com
+4463170017282479|04|35|182||Anne Coccionitti|11 S Shore Blvd|Lackawanna|NY|14218|US|3347499876|acoccionitti@aol.com|CheckDx => Live| URL：https://dxchecklive.com
+4472270142070143|03|30|341||Carter Girpba|218 2nd St|East Providence|RI|02914|US|7604037316|anjolaoluwajemiseye@gmail.com|CheckDx => Live| URL：https://dxchecklive.com
+4828210062221020|03|30|351||Dustin Martin|215 10th Ave S Unit 533|Minneapolis|MN|55415|US|7757089528|bdxwws4cyj@hotmail.com|CheckDx => Live| URL：https://dxchecklive.com
+4342571009071431|04|30|235||Juan Garcia|1828 St Peter Ln|Billings|MT|59101|US|8164201968|Coilhermons7@gmail.com|CheckDx => Live| URL：https://dxchecklive.com
+4347697134876363|05|31|059||Kaiden Mongenel|801 Aria Rd|Hemet|CA|92543|US|7813110147|Avensmith5150ie@gmail.com|CheckDx => Live| URL：https://dxchecklive.com
+4472270077752251|06|29|856||Mitchell Smoafa|25 Massachusetts Ave NW|Washington|DC|20001|US|4351620651|darian305@outlook.com|CheckDx => Live| URL：https://dxchecklive.com
+4288240053655566|01|29|160||Brittany Spaulding|220 S 16th Ave APT D|Bozeman|MT|59715|US|8677851816|brittjoolden@gmail.com|CheckDx => Live| URL：https://dxchecklive.com
+4337478022632420|07|29|590||Martinez Bperry|216 North Blvd|Baton Rouge|LA|70802|US|9254906338|Brandonarcee777@gmail.com|CheckDx => Live| URL：https://dxchecklive.com
+4217834041352322|02|30|070||Brandon Ramirez|2115 Ave D|Scottsbluff|NE|69361|US|2814139488|Bossbaby676777@gmail.com|CheckDx => Live| URL：https://dxchecklive.com
+4207670348471551|04|31|042||Jennifer L Fellows|15 Broad St Apt 2012|New York|NY|10005|US|6619888956|Cjgarcia7867@gmail.com|CheckDx => Live| URL：https://dxchecklive.com
+4190021004691885|06|30|700||Abel Martinez|400 N 1st St Apt 308|Minneapolis|MN|55401|US|6141457027|benthiram@gmail.com|CheckDx => Live| URL：https://dxchecklive.com
+4347690536822184|03|30|449||CIPRIANO JUSTO ORTIZ|520 S Vine St #0|Indianapolis|IN|46241|US|5703328727|ajairjusto11@gmail.com|CheckDx => Live| URL：https://dxchecklive.com
+4342562545283408|04|30|861||ALEXANDER|55 Page St Apt 724|San Francisco|CA|94102|US|3234086803|blowzedwilliams@gmail.com|CheckDx => Live| URL：https://dxchecklive.com
+4118102073298858|04|36|457||Annabelle Rahal|1434 Reading Ct|Burlington|NC|27217|US|2167932142|abdokhd657@gmail.com|CheckDx => Live| URL：https://dxchecklive.com
+4472270065027567|01|30|278||Allen Rmdhnf|3114 Boulder Rdg Dr|Rosenberg|TX|77471|US|3215046323|amyq042981@gmail.com|CheckDx => Live| URL：https://dxchecklive.com
+4143980542501989|06|28|474||Amrik Singh|703 Horizon Cove #1036|Rocklin|CA|95677|US|8181989521|Amrik1986singh@icloud.com|CheckDx => Live| URL：https://dxchecklive.com
+4133310894462303|03|30|007||Baker Frhgip|125 Melrose Dr|Chattanooga|TN|37421|US|3017050430|corttle74@gmail.com|CheckDx => Live| URL：https://dxchecklive.com`;
+
+        const defaultHeaders = [
+            "Card Number", "Exp Month", "Exp Year", "CVV", "Extra", "Name", 
+            "Address", "City", "State", "Zip", "Country", "Phone", "Email", "Status", "URL"
+        ];
+
+        let parsedTableData = [];
+        let headers = [...defaultHeaders];
+
+        document.getElementById('csvInput').value = defaultCsvData;
+
+        // Collapsible Editor toggle
+        const editorHeader = document.getElementById('editorHeader');
+        const editorBody = document.getElementById('editorBody');
+        const chevronIcon = document.getElementById('chevronIcon');
+        const toggleText = document.getElementById('toggleText');
+
+        editorHeader.addEventListener('click', () => {
+            editorBody.classList.toggle('hidden');
+            chevronIcon.classList.toggle('rotate-180');
+            toggleText.textContent = editorBody.classList.contains('hidden') ? 'Show Editor' : 'Hide Editor';
+        });
+
+        // Theme management
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+        });
+
+        // Toast notification helper
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').textContent = message;
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3000);
+        }
+
+        function parseCsvContent(text) {
+            const lines = text.trim().split('\n');
+            const rows = [];
+            
+            for (let line of lines) {
+                if (!line.trim()) continue;
+                // Detect delimiter (pipe or comma)
+                let delimiter = line.includes('|') ? '|' : ',';
+                // Simple regex split respecting possible quotes or clean splits
+                let cells = line.split(delimiter).map(c => c.trim().replace(/^"(.*)"$/, '$1'));
+                // Clean up URL formatting if present like URL：https://dxchecklive.com
+                cells = cells.map(cell => {
+                    if (cell.startsWith('URL：')) {
+                        return cell.replace('URL：', '');
+                    }
+                    if (cell.startsWith('CheckDx => ')) {
+                        return cell.replace('CheckDx => ', '');
+                    }
+                    return cell;
+                });
+                rows.push(cells);
+            }
+            return rows;
+        }
+
+        function loadAndRenderData() {
+            const rawText = document.getElementById('csvInput').value;
+            const rawRows = parseCsvContent(rawText);
+            
+            if (rawRows.length === 0) {
+                parsedTableData = [];
+                renderTable([]);
+                showToast("Parsed 0 records.");
+                return;
+            }
+
+            parsedTableData = rawRows;
+            filterAndRenderTable();
+            showToast(`Successfully parsed ${parsedTableData.length} records!`);
+        }
+
+        function maskCardNumber(cardNum) {
+            if (!cardNum || cardNum.length < 4) return cardNum;
+            const last4 = cardNum.slice(-4);
+            return `•••• •••• •••• ${last4}`;
+        }
+
+        function filterAndRenderTable() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const isMasked = document.getElementById('maskToggle').checked;
+
+            const filtered = parsedTableData.filter(row => {
+                return row.some(cell => cell.toLowerCase().includes(query));
+            });
+
+            document.getElementById('recordCountBadge').textContent = `${filtered.length} / ${parsedTableData.length}`;
+            renderTable(filtered, isMasked);
+        }
+
+        function renderTable(rows, isMasked = true) {
+            const headerRow = document.getElementById('tableHeaderRow');
+            const tbody = document.getElementById('tableBodyRow');
+            const emptyState = document.getElementById('emptyState');
+
+            // Render headers
+            headerRow.innerHTML = headers.map(h => `<th class="px-4 py-3">${h}</th>`).join('');
+
+            if (rows.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            tbody.innerHTML = rows.map((row, rIdx) => {
+                return `<tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">` +
+                    row.map((cell, cIdx) => {
+                        let displayVal = cell;
+                        // Mask card number if column index is 0 and mask is enabled
+                        if (cIdx === 0 && isMasked) {
+                            displayVal = maskCardNumber(cell);
+                        }
+                        // Badge styling for status or URL
+                        if (cell === 'Live') {
+                            displayVal = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">Live</span>`;
+                        } else if (cIdx === headers.length - 1 && cell.startsWith('http')) {
+                            displayVal = `<a href="${cell}" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">Link ↗</a>`;
+                        }
+                        return `<td class="px-4 py-3 whitespace-nowrap">${displayVal}</td>`;
+                    }).join('') +
+                `</tr>`;
+            }).join('');
+        }
+
+        document.getElementById('parseBtn').addEventListener('click', loadAndRenderData);
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            document.getElementById('csvInput').value = defaultCsvData;
+            loadAndRenderData();
+        });
+        document.getElementById('searchInput').addEventListener('input', filterAndRenderTable);
+        document.getElementById('maskToggle').addEventListener('change', filterAndRenderTable);
+
+        // Copy Filtered CSV
+        document.getElementById('copyFilteredBtn').addEventListener('click', () => {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = parsedTableData.filter(row => row.some(cell => cell.toLowerCase().includes(query)));
+            const csvString = [headers.join(','), ...filtered.map(r => r.join(','))].join('\n');
+
+            const textarea = document.createElement('textarea');
+            textarea.value = csvString;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast("Filtered CSV copied to clipboard!");
+            } catch (err) {
+                showToast("Failed to copy CSV.");
+            }
+            document.body.removeChild(textarea);
+        });
+
+        // Export Filtered CSV file
+        document.getElementById('exportCsvBtn').addEventListener('click', () => {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = parsedTableData.filter(row => row.some(cell => cell.toLowerCase().includes(query)));
+            const csvString = [headers.join(','), ...filtered.map(r => r.join(','))].join('\n');
+
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `exported_data_${Date.now()}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("CSV file downloaded successfully!");
+        });
+
+        // Initial load on window startup
+        window.onload = function() {
+            loadAndRenderData();
+        };
+    </script>
+</body>
+</html>
