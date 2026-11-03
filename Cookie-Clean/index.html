@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cookie Extractor & Cleaner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f1f5f9;
+            color: #1e293b;
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        .container {
+            background: #ffffff;
+            padding: 24px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+            width: 100%;
+            max-width: 520px;
+        }
+        h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #0f172a;
+            text-align: center;
+        }
+        p.subtitle {
+            font-size: 13px;
+            color: #64748b;
+            text-align: center;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .form-group {
+            margin-bottom: 14px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            outline: none;
+            transition: border-color 0.2s;
+            background: #f8fafc;
+            color: #1e293b;
+        }
+        .form-control:focus {
+            border-color: #2563eb;
+            background: #ffffff;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            color: #334155;
+            cursor: pointer;
+        }
+        .checkbox-group input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .upload-area {
+            display: block;
+            width: 100%;
+            border: 2px dashed #94a3b8;
+            padding: 28px 16px;
+            margin: 16px 0;
+            border-radius: 8px;
+            background-color: #f8fafc;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+        .upload-area:hover, .upload-area:active {
+            border-color: #2563eb;
+            background-color: #eff6ff;
+        }
+        .upload-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #334155;
+            margin-bottom: 4px;
+        }
+        .upload-hint {
+            font-size: 12px;
+            color: #64748b;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .btn {
+            width: 100%;
+            background-color: #2563eb;
+            color: #ffffff;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: #1d4ed8;
+        }
+        .btn:active {
+            transform: translateY(1px);
+        }
+        #log {
+            margin-top: 20px;
+            text-align: left;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 12px;
+            border-radius: 6px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .log-entry {
+            border-bottom: 1px solid #1e293b;
+            padding: 3px 0;
+            word-break: break-all;
+        }
+        .status-ok { color: #4ade80; }
+        .status-del { color: #f87171; }
+        .status-info { color: #38bdf8; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Cookie Cleaner & Processor</h2>
+    <p class="subtitle">Upload .zip or .txt files to strip junk text, validate cookies, and rename files sequentially.</p>
+
+    <div class="form-group">
+        <label for="filePrefix">Cookie File Name Prefix</label>
+        <input type="text" id="filePrefix" class="form-control" value="cookie" placeholder="e.g. cookie (outputs cookie_1.txt)">
+    </div>
+
+    <div class="form-group">
+        <label for="zipName">Output Archive Name (.zip)</label>
+        <input type="text" id="zipName" class="form-control" value="cleaned_cookies" placeholder="e.g. cleaned_cookies">
+    </div>
+
+    <label class="checkbox-group">
+        <input type="checkbox" id="splitBlocks" checked>
+        <span>Split multiple cookie blocks in a single .txt file into separate files</span>
+    </label>
+
+    <label class="upload-area" for="fileInput">
+        <div class="upload-title" id="file-name">Tap to select files (.zip or .txt)</div>
+        <div class="upload-hint">Supports nested folders and multiple files</div>
+    </label>
+    <input type="file" id="fileInput" accept=".zip, .txt" multiple>
+
+    <button class="btn" onclick="processFiles()">Process & Download</button>
+
+    <div id="log">Ready. Waiting for files...</div>
+</div>
+
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const fileNameDisplay = document.getElementById('file-name');
+    const logDiv = document.getElementById('log');
+
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            fileNameDisplay.textContent = `${this.files.length} file(s) selected`;
+            fileNameDisplay.style.color = "#2563eb";
+            fileNameDisplay.style.fontWeight = "600";
+        }
+    });
+
+    function logMessage(msg, type = 'info') {
+        const div = document.createElement('div');
+        div.className = `log-entry status-${type}`;
+        div.textContent = msg;
+        logDiv.appendChild(div);
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    // Check if a single line is a valid cookie line (Netscape or Key=Value header)
+    function isValidCookieLine(line) {
+        const trimmed = line.trim();
+        if (!trimmed) return false;
+        if (trimmed.startsWith('#')) {
+            return trimmed.toLowerCase().includes('netscape') || trimmed.toLowerCase().includes('http cookie file');
+        }
+
+        // 1. Netscape format (Tab-separated or multi-space separated: 7 fields)
+        const tabParts = trimmed.split('\t');
+        if (tabParts.length >= 6) {
+            const domain = tabParts[0].trim();
+            const flag = tabParts[1].trim().toUpperCase();
+            const secure = tabParts[3].trim().toUpperCase();
+            if (domain.includes('.') && (flag === 'TRUE' || flag === 'FALSE') && (secure === 'TRUE' || secure === 'FALSE')) {
+                return true;
+            }
+        }
+
+        const spaceParts = trimmed.split(/\s+/);
+        if (spaceParts.length >= 6) {
+            const domain = spaceParts[0].trim();
+            const flag = spaceParts[1].trim().toUpperCase();
+            const secure = spaceParts[3].trim().toUpperCase();
+            if (domain.includes('.') && (flag === 'TRUE' || flag === 'FALSE') && (secure === 'TRUE' || secure === 'FALSE')) {
+                // Convert space-separated Netscape line to standard tab-separated
+                return true;
+            }
+        }
+
+        // 2. Raw Cookie Header string (e.g. name=value; name2=value2;)
+        if (trimmed.includes('=') && trimmed.includes(';') && !trimmed.startsWith('http')) {
+            const pairs = trimmed.split(';').map(s => s.trim()).filter(Boolean);
+            let validPairs = 0;
+            for (const p of pairs) {
+                if (/^[a-zA-Z0-9_\-\.]+=/.test(p)) validPairs++;
+            }
+            if (validPairs >= 2 && validPairs >= pairs.length * 0.6) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Extract one or more cookie blocks from messy text
+    function extractCookieBlocks(text) {
+        const blocks = [];
+        let workingText = text;
+
+        // 1. Extract JSON Cookie Arrays if present
+        const jsonRegex = /\[\s*\{[\s\S]*?\}\s*\]/g;
+        let match;
+        while ((match = jsonRegex.exec(text)) !== null) {
+            try {
+                const parsed = JSON.parse(match[0]);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    const validItems = parsed.filter(item => item && typeof item === 'object' && (item.domain || item.name || item.value));
+                    if (validItems.length > 0) {
+                        blocks.push(JSON.stringify(validItems, null, 2));
+                        workingText = workingText.replace(match[0], '\n---SPLIT---\n');
+                    }
+                }
+            } catch (e) {
+                // Ignore invalid JSON segments
+            }
+        }
+
+        // 2. Extract Netscape / Header blocks from remaining text
+        const lines = workingText.split(/\r?\n/);
+        let currentBlock = [];
+
+        for (let rawLine of lines) {
+            const line = rawLine.trim();
+            if (isValidCookieLine(line)) {
+                // Normalize space-separated Netscape lines to Tab-separated
+                const spaceParts = line.split(/\s+/);
+                if (!line.includes('\t') && spaceParts.length >= 6 && (spaceParts[1].toUpperCase() === 'TRUE' || spaceParts[1].toUpperCase() === 'FALSE')) {
+                    currentBlock.push(spaceParts.slice(0, 7).join('\t'));
+                } else {
+                    currentBlock.push(line);
+                }
+            } else {
+                // Non-cookie line encountered; if we collected valid cookie lines, close the current block
+                const realCookies = currentBlock.filter(l => !l.startsWith('#'));
+                if (realCookies.length > 0) {
+                    blocks.push(currentBlock.join('\n'));
+                }
+                currentBlock = [];
+            }
+        }
+
+        const remainingReal = currentBlock.filter(l => !l.startsWith('#'));
+        if (remainingReal.length > 0) {
+            blocks.push(currentBlock.join('\n'));
+        }
+
+        return blocks;
+    }
+
+    function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    async function processFiles() {
+        const files = fileInput.files;
+        if (files.length === 0) {
+            alert("Please select at least one file.");
+            return;
+        }
+
+        const rawPrefix = document.getElementById('filePrefix').value.trim() || 'cookie';
+        // Remove trailing underscores or spaces so we cleanly format as prefix_1.txt
+        const cleanPrefix = rawPrefix.replace(/[_\s]+$/, '');
+
+        let zipOutName = document.getElementById('zipName').value.trim() || 'cleaned_cookies';
+        if (!zipOutName.toLowerCase().endsWith('.zip')) {
+            zipOutName += '.zip';
+        }
+
+        const splitBlocks = document.getElementById('splitBlocks').checked;
+
+        logDiv.innerHTML = "";
+        logMessage("Starting processing...", "info");
+
+        const outputZip = new JSZip();
+        let globalCounter = 0;
+
+        for (let file of files) {
+            const lowerName = file.name.toLowerCase();
+
+            if (lowerName.endsWith('.zip')) {
+                logMessage(`Scanning archive: ${file.name}`, "info");
+                try {
+                    const loadedZip = await JSZip.loadAsync(file);
+                    const entries = Object.entries(loadedZip.files);
+
+                    for (const [relativePath, zipEntry] of entries) {
+                        if (zipEntry.dir) continue;
+
+                        const content = await zipEntry.async("string");
+                        const blocks = extractCookieBlocks(content);
+
+                        if (blocks.length > 0) {
+                            // Keep folder structure, replace filename with prefix_N.txt
+                            const pathParts = relativePath.split('/');
+                            pathParts.pop(); // remove old file name
+                            const folderPath = pathParts.length > 0 ? pathParts.join('/') + '/' : '';
+
+                            if (splitBlocks && blocks.length > 1) {
+                                for (let b of blocks) {
+                                    globalCounter++;
+                                    const newFilePath = `${folderPath}${cleanPrefix}_${globalCounter}.txt`;
+                                    outputZip.file(newFilePath, b);
+                                    logMessage(`[SAVED] ${newFilePath} (from ${relativePath})`, "ok");
+                                }
+                            } else {
+                                globalCounter++;
+                                const newFilePath = `${folderPath}${cleanPrefix}_${globalCounter}.txt`;
+                                outputZip.file(newFilePath, blocks.join('\n\n'));
+                                logMessage(`[SAVED] ${newFilePath}`, "ok");
+                            }
+                        } else {
+                            logMessage(`[REMOVED - NO COOKIE] ${relativePath}`, "del");
+                        }
+                    }
+                } catch (err) {
+                    logMessage(`[ERROR] Failed to read zip: ${file.name}`, "del");
+                }
+            } else if (lowerName.endsWith('.txt')) {
+                logMessage(`Scanning file: ${file.name}`, "info");
+                const text = await file.text();
+                const blocks = extractCookieBlocks(text);
+
+                if (blocks.length > 0) {
+                    if (splitBlocks) {
+                        for (let b of blocks) {
+                            globalCounter++;
+                            const newFileName = `${cleanPrefix}_${globalCounter}.txt`;
+                            outputZip.file(newFileName, b);
+                            logMessage(`[SAVED] ${newFileName}`, "ok");
+                        }
+                    } else {
+                        globalCounter++;
+                        const newFileName = `${cleanPrefix}_${globalCounter}.txt`;
+                        outputZip.file(newFileName, blocks.join('\n\n'));
+                        logMessage(`[SAVED] ${newFileName}`, "ok");
+                    }
+                } else {
+                    logMessage(`[REMOVED - NO COOKIE] ${file.name}`, "del");
+                }
+            }
+        }
+
+        if (globalCounter > 0) {
+            // If only 1 cookie file was produced from a single .txt upload, download directly or zip
+            if (globalCounter === 1 && files.length === 1 && files[0].name.toLowerCase().endsWith('.txt')) {
+                const singleFileName = `${cleanPrefix}_1.txt`;
+                const content = await outputZip.file(singleFileName).async("blob");
+                downloadBlob(content, singleFileName);
+                logMessage(`Done! Downloaded ${singleFileName}`, "info");
+            } else {
+                const zipBlob = await outputZip.generateAsync({ type: "blob" });
+                downloadBlob(zipBlob, zipOutName);
+                logMessage(`Done! Generated ${zipOutName} with ${globalCounter} cookie file(s).`, "info");
+            }
+        } else {
+            logMessage("Process finished. No valid cookies found in any file.", "del");
+        }
+    }
+</script>
+
+</body>
+</html>
